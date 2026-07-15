@@ -53,6 +53,12 @@ type PinchState = {
 type StoredPdf = {
   data: ArrayBuffer
   name: string
+  opacity?: number
+  pageNumber?: number
+  penColor?: string
+  penWidth?: number
+  strokes?: Stroke[]
+  zoom?: number
 }
 
 const MIN_ZOOM = 0.5
@@ -78,6 +84,7 @@ function App() {
   const activeStrokePointerRef = useRef<number | null>(null)
   const pointersRef = useRef<Map<number, PointerPosition>>(new Map())
   const pinchStateRef = useRef<PinchState | null>(null)
+  const hasOpenedPdfRef = useRef(false)
 
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null)
   const [pdfName, setPdfName] = useState('')
@@ -116,7 +123,22 @@ function App() {
           return
         }
 
-        await openPdfData(storedPdf.data, storedPdf.name, { clearStrokes: true, persist: false })
+        await openPdfData(storedPdf.data, storedPdf.name, {
+          clearStrokes: true,
+          pageNumber: storedPdf.pageNumber,
+          persist: false,
+          strokes: storedPdf.strokes,
+          zoom: storedPdf.zoom,
+        })
+        if (storedPdf.penColor) {
+          setPenColor(storedPdf.penColor)
+        }
+        if (storedPdf.penWidth !== undefined) {
+          setPenWidth(storedPdf.penWidth)
+        }
+        if (storedPdf.opacity !== undefined) {
+          setOpacity(storedPdf.opacity)
+        }
       } catch (restoreError) {
         if (!isCancelled) {
           setError(restoreError instanceof Error ? restoreError.message : 'Could not restore the saved PDF.')
@@ -129,7 +151,27 @@ function App() {
     return () => {
       isCancelled = true
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  useEffect(() => {
+    if (!pdf || !hasOpenedPdfRef.current) {
+      return
+    }
+
+    const saveTimer = window.setTimeout(() => {
+      void mergeStoredPdf({
+        opacity,
+        pageNumber,
+        penColor,
+        penWidth,
+        strokes,
+        zoom,
+      })
+    }, 250)
+
+    return () => window.clearTimeout(saveTimer)
+  }, [opacity, pageNumber, pdf, penColor, penWidth, strokes, zoom])
 
   useEffect(() => {
     if (!pdf) {
@@ -225,7 +267,13 @@ function App() {
   const openPdfData = async (
     data: ArrayBuffer,
     name: string,
-    options: { clearStrokes: boolean; persist: boolean },
+    options: {
+      clearStrokes: boolean
+      pageNumber?: number
+      persist: boolean
+      strokes?: Stroke[]
+      zoom?: number
+    },
   ) => {
     setIsLoading(true)
     setError('')
@@ -245,13 +293,23 @@ function App() {
       }).promise
       setPdf(nextPdf)
       setPdfName(name)
-      setPageNumber(1)
-      setZoom(1)
+      setPageNumber(clamp(options.pageNumber ?? 1, 1, nextPdf.numPages))
+      setZoom(clamp(options.zoom ?? 1, MIN_ZOOM, MAX_ZOOM))
       if (options.clearStrokes) {
-        setStrokes([])
+        setStrokes(options.strokes ?? [])
       }
+      hasOpenedPdfRef.current = true
       if (options.persist) {
-        await saveStoredPdf({ data, name })
+        await saveStoredPdf({
+          data,
+          name,
+          opacity,
+          pageNumber: 1,
+          penColor,
+          penWidth,
+          strokes: [],
+          zoom: 1,
+        })
       }
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Could not open this PDF.')
@@ -417,6 +475,7 @@ function App() {
     setStrokes([])
     setPageSize(null)
     setError('')
+    hasOpenedPdfRef.current = false
     void clearStoredPdf()
   }
 
@@ -759,6 +818,22 @@ async function saveStoredPdf(pdf: StoredPdf) {
       database.close()
       resolve()
     }
+  })
+}
+
+async function mergeStoredPdf(pdfState: Omit<StoredPdf, 'data' | 'name'>) {
+  if (!('indexedDB' in window)) {
+    return
+  }
+
+  const storedPdf = await readStoredPdf()
+  if (!storedPdf) {
+    return
+  }
+
+  await saveStoredPdf({
+    ...storedPdf,
+    ...pdfState,
   })
 }
 
