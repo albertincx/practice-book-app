@@ -11,6 +11,7 @@ import {
   Plus,
   RotateCcw,
   Settings,
+  Type,
   Trash2,
   Undo2,
   X,
@@ -29,12 +30,25 @@ type StrokePoint = {
 }
 
 type Stroke = {
+  createdAt?: number
   id: string
   page: number
   color: string
   opacity: number
   width: number
   points: StrokePoint[]
+}
+
+type TextAnnotation = {
+  color: string
+  createdAt: number
+  id: string
+  opacity: number
+  page: number
+  size: number
+  text: string
+  x: number
+  y: number
 }
 
 type PageSize = {
@@ -60,6 +74,7 @@ type StoredPdf = {
   penColor?: string
   penWidth?: number
   strokes?: Stroke[]
+  texts?: TextAnnotation[]
   zoom?: number
 }
 
@@ -108,17 +123,25 @@ function App() {
   const [zoom, setZoom] = useState(1)
   const [tool, setTool] = useState<Tool>('draw')
   const [strokes, setStrokes] = useState<Stroke[]>([])
+  const [texts, setTexts] = useState<TextAnnotation[]>([])
+  const [pendingText, setPendingText] = useState('')
+  const [textDraft, setTextDraft] = useState('')
   const [penColor, setPenColor] = useState(PEN_COLORS[0])
   const [penWidth, setPenWidth] = useState(4)
   const [opacity, setOpacity] = useState(0.65)
   const [isLoading, setIsLoading] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [isTextDialogOpen, setIsTextDialogOpen] = useState(false)
   const [localDataSize, setLocalDataSize] = useState<number | null>(null)
   const [error, setError] = useState('')
 
   const pageStrokes = useMemo(
     () => strokes.filter((stroke) => stroke.page === pageNumber),
     [pageNumber, strokes],
+  )
+  const pageTexts = useMemo(
+    () => texts.filter((text) => text.page === pageNumber),
+    [pageNumber, texts],
   )
 
   useEffect(() => {
@@ -144,6 +167,7 @@ function App() {
           pageNumber: storedPdf.pageNumber,
           persist: false,
           strokes: storedPdf.strokes,
+          texts: storedPdf.texts,
           zoom: storedPdf.zoom,
         })
         if (storedPdf.penColor) {
@@ -182,12 +206,13 @@ function App() {
         penColor,
         penWidth,
         strokes,
+        texts,
         zoom,
       })
     }, 250)
 
     return () => window.clearTimeout(saveTimer)
-  }, [opacity, pageNumber, pdf, penColor, penWidth, strokes, zoom])
+  }, [opacity, pageNumber, pdf, penColor, penWidth, strokes, texts, zoom])
 
   useEffect(() => {
     if (!isSettingsOpen) {
@@ -286,7 +311,10 @@ function App() {
     for (const stroke of pageStrokes) {
       drawStroke(context, stroke)
     }
-  }, [pageSize, pageStrokes, zoom])
+    for (const text of pageTexts) {
+      drawTextAnnotation(context, text)
+    }
+  }, [pageSize, pageStrokes, pageTexts, zoom])
 
   const openPdfData = async (
     data: ArrayBuffer,
@@ -296,6 +324,7 @@ function App() {
       pageNumber?: number
       persist: boolean
       strokes?: Stroke[]
+      texts?: TextAnnotation[]
       zoom?: number
     },
   ) => {
@@ -321,6 +350,7 @@ function App() {
       setZoom(clamp(options.zoom ?? 1, MIN_ZOOM, MAX_ZOOM))
       if (options.clearStrokes) {
         setStrokes(options.strokes ?? [])
+        setTexts(options.texts ?? [])
       }
       hasOpenedPdfRef.current = true
       if (options.persist) {
@@ -332,6 +362,7 @@ function App() {
           penColor,
           penWidth,
           strokes: [],
+          texts: [],
           zoom: 1,
         })
       }
@@ -416,7 +447,13 @@ function App() {
       return
     }
 
+    if (pendingText) {
+      placeText(point)
+      return
+    }
+
     const stroke: Stroke = {
+      createdAt: Date.now(),
       id: crypto.randomUUID(),
       page: pageNumber,
       color: penColor,
@@ -476,15 +513,25 @@ function App() {
 
   const undoPageStroke = () => {
     const lastPageStroke = [...strokes].reverse().find((stroke) => stroke.page === pageNumber)
-    if (!lastPageStroke) {
+    const lastPageText = [...texts].reverse().find((text) => text.page === pageNumber)
+    if (!lastPageStroke && !lastPageText) {
       return
     }
 
-    setStrokes((current) => current.filter((stroke) => stroke.id !== lastPageStroke.id))
+    const strokeCreatedAt = lastPageStroke?.createdAt ?? 0
+    const textCreatedAt = lastPageText?.createdAt ?? 0
+
+    if (lastPageText && textCreatedAt >= strokeCreatedAt) {
+      setTexts((current) => current.filter((text) => text.id !== lastPageText.id))
+      return
+    }
+
+    setStrokes((current) => current.filter((stroke) => stroke.id !== lastPageStroke?.id))
   }
 
   const clearPage = () => {
     setStrokes((current) => current.filter((stroke) => stroke.page !== pageNumber))
+    setTexts((current) => current.filter((text) => text.page !== pageNumber))
   }
 
   const resetDocument = () => {
@@ -497,6 +544,9 @@ function App() {
     setPageInput('1')
     setZoom(1)
     setStrokes([])
+    setTexts([])
+    setPendingText('')
+    setTextDraft('')
     setPageSize(null)
     setError('')
     hasOpenedPdfRef.current = false
@@ -528,6 +578,9 @@ function App() {
     setPageInput('1')
     setZoom(1)
     setStrokes([])
+    setTexts([])
+    setPendingText('')
+    setTextDraft('')
     setPageSize(null)
     await clearStoredPdf()
     setLocalDataSize(0)
@@ -539,6 +592,46 @@ function App() {
     pointersRef.current.clear()
     pinchStateRef.current = null
     setTool(nextTool)
+  }
+
+  const openTextDialog = () => {
+    setTextDraft(pendingText)
+    setIsTextDialogOpen(true)
+  }
+
+  const armTextPlacement = () => {
+    const trimmedText = textDraft.trim()
+    setIsTextDialogOpen(false)
+
+    if (!trimmedText) {
+      setPendingText('')
+      return
+    }
+
+    setPendingText(trimmedText)
+    changeTool('draw')
+  }
+
+  const placeText = (point: StrokePoint) => {
+    if (!pendingText) {
+      return
+    }
+
+    setTexts((current) => [
+      ...current,
+      {
+        color: penColor,
+        createdAt: Date.now(),
+        id: crypto.randomUUID(),
+        opacity,
+        page: pageNumber,
+        size: Math.max(12, penWidth * 4),
+        text: pendingText,
+        x: point.x,
+        y: point.y,
+      },
+    ])
+    setPendingText('')
   }
 
   const goToPage = () => {
@@ -625,6 +718,16 @@ function App() {
             </button>
           </div>
 
+          <button
+            type="button"
+            aria-label="Insert text"
+            className={`inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-700 disabled:text-zinc-300 ${pendingText ? 'ring-2 ring-zinc-950' : ''}`}
+            disabled={!pdf}
+            onClick={openTextDialog}
+          >
+            <Type className="h-4 w-4" />
+          </button>
+
           <div className="flex items-center rounded-md border border-zinc-200 bg-white">
             <button
               type="button"
@@ -696,7 +799,7 @@ function App() {
             type="button"
             aria-label="Undo"
             className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-700 disabled:text-zinc-300"
-            disabled={!pageStrokes.length}
+            disabled={!pageStrokes.length && !pageTexts.length}
             onClick={undoPageStroke}
           >
             <Undo2 className="h-4 w-4" />
@@ -705,7 +808,7 @@ function App() {
             type="button"
             aria-label="Clear page"
             className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-700 disabled:text-zinc-300"
-            disabled={!pageStrokes.length}
+            disabled={!pageStrokes.length && !pageTexts.length}
             onClick={clearPage}
           >
             <Trash2 className="h-4 w-4" />
@@ -799,6 +902,11 @@ function App() {
                   Loading
                 </div>
               ) : null}
+              {pendingText ? (
+                <div className="pointer-events-none absolute left-2 top-2 rounded bg-zinc-950/80 px-2 py-1 text-xs font-medium text-white">
+                  Tap to place text
+                </div>
+              ) : null}
             </div>
           </div>
         )}
@@ -844,6 +952,48 @@ function App() {
           </section>
         </div>
       ) : null}
+
+      {isTextDialogOpen ? (
+        <div className="fixed inset-0 z-40 flex items-end bg-black/30 p-3 sm:items-center sm:justify-center">
+          <section className="w-full rounded-lg bg-white p-4 shadow-2xl ring-1 ring-zinc-200 sm:max-w-sm">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-base font-semibold">Insert text</h2>
+              <button
+                type="button"
+                aria-label="Close text dialog"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-zinc-200 text-zinc-700"
+                onClick={() => setIsTextDialogOpen(false)}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <textarea
+              autoFocus
+              className="mt-4 min-h-28 w-full resize-none rounded-md border border-zinc-200 p-3 text-base outline-none focus:border-zinc-950"
+              value={textDraft}
+              onChange={(event) => setTextDraft(event.target.value)}
+            />
+
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                className="inline-flex h-11 flex-1 items-center justify-center rounded-md border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-700"
+                onClick={() => setIsTextDialogOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="inline-flex h-11 flex-1 items-center justify-center rounded-md bg-zinc-950 px-4 text-sm font-medium text-white"
+                onClick={armTextPlacement}
+              >
+                OK
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </main>
   )
 }
@@ -870,6 +1020,21 @@ function drawStroke(context: CanvasRenderingContext2D, stroke: Stroke) {
   }
 
   context.stroke()
+  context.restore()
+}
+
+function drawTextAnnotation(context: CanvasRenderingContext2D, text: TextAnnotation) {
+  context.save()
+  context.globalAlpha = text.opacity
+  context.fillStyle = text.color
+  context.font = `${text.size}px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
+  context.textBaseline = 'top'
+
+  const lines = text.text.split('\n')
+  lines.forEach((line, index) => {
+    context.fillText(line, text.x, text.y + index * text.size * 1.25)
+  })
+
   context.restore()
 }
 
@@ -975,6 +1140,7 @@ async function getStoredPdfSize() {
       penColor: storedPdf.penColor,
       penWidth: storedPdf.penWidth,
       strokes: storedPdf.strokes ?? [],
+      texts: storedPdf.texts ?? [],
       zoom: storedPdf.zoom,
     }),
   ]).size
