@@ -5,6 +5,7 @@ import {
   ChevronRight,
   Eraser,
   FileUp,
+  Hash,
   Hand,
   Minus,
   Plus,
@@ -49,10 +50,18 @@ type PinchState = {
   zoom: number
 }
 
+type StoredPdf = {
+  data: ArrayBuffer
+  name: string
+}
+
 const MIN_ZOOM = 0.5
 const MAX_ZOOM = 3
 const ZOOM_STEP = 0.25
 const PEN_COLORS = ['#111827', '#dc2626', '#2563eb', '#16a34a', '#f59e0b']
+const PDF_STORE_DB = 'pdf-ink-prototype'
+const PDF_STORE_NAME = 'pdfs'
+const LAST_PDF_KEY = 'last-opened'
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max)
@@ -73,6 +82,7 @@ function App() {
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null)
   const [pdfName, setPdfName] = useState('')
   const [pageNumber, setPageNumber] = useState(1)
+  const [pageInput, setPageInput] = useState('1')
   const [pageSize, setPageSize] = useState<PageSize | null>(null)
   const [zoom, setZoom] = useState(1)
   const [tool, setTool] = useState<Tool>('draw')
@@ -87,6 +97,39 @@ function App() {
     () => strokes.filter((stroke) => stroke.page === pageNumber),
     [pageNumber, strokes],
   )
+
+  useEffect(() => {
+    setPageInput(String(pageNumber))
+  }, [pageNumber])
+
+  useEffect(() => {
+    let isCancelled = false
+
+    const restoreLastPdf = async () => {
+      if (!('indexedDB' in window)) {
+        return
+      }
+
+      try {
+        const storedPdf = await readStoredPdf()
+        if (!storedPdf || isCancelled) {
+          return
+        }
+
+        await openPdfData(storedPdf.data, storedPdf.name, { clearStrokes: true, persist: false })
+      } catch (restoreError) {
+        if (!isCancelled) {
+          setError(restoreError instanceof Error ? restoreError.message : 'Could not restore the saved PDF.')
+        }
+      }
+    }
+
+    void restoreLastPdf()
+
+    return () => {
+      isCancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     if (!pdf) {
@@ -179,7 +222,11 @@ function App() {
     }
   }, [pageSize, pageStrokes, zoom])
 
-  const loadPdf = async (file: File) => {
+  const openPdfData = async (
+    data: ArrayBuffer,
+    name: string,
+    options: { clearStrokes: boolean; persist: boolean },
+  ) => {
     setIsLoading(true)
     setError('')
     cancelActiveStroke()
@@ -187,9 +234,8 @@ function App() {
     pinchStateRef.current = null
 
     try {
-      const data = await file.arrayBuffer()
       const nextPdf = await pdfjsLib.getDocument({
-        data,
+        data: data.slice(0),
         canvasMaxAreaInBytes: -1,
         isImageDecoderSupported: false,
         isOffscreenCanvasSupported: false,
@@ -198,15 +244,25 @@ function App() {
         wasmUrl: '/pdfjs/wasm/',
       }).promise
       setPdf(nextPdf)
-      setPdfName(file.name)
+      setPdfName(name)
       setPageNumber(1)
       setZoom(1)
-      setStrokes([])
+      if (options.clearStrokes) {
+        setStrokes([])
+      }
+      if (options.persist) {
+        await saveStoredPdf({ data, name })
+      }
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Could not open this PDF.')
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const loadPdf = async (file: File) => {
+    const data = await file.arrayBuffer()
+    await openPdfData(data, file.name, { clearStrokes: true, persist: true })
   }
 
   const updateZoom = (nextZoom: number) => {
@@ -356,10 +412,12 @@ function App() {
     setPdf(null)
     setPdfName('')
     setPageNumber(1)
+    setPageInput('1')
     setZoom(1)
     setStrokes([])
     setPageSize(null)
     setError('')
+    void clearStoredPdf()
   }
 
   const changeTool = (nextTool: Tool) => {
@@ -367,6 +425,20 @@ function App() {
     pointersRef.current.clear()
     pinchStateRef.current = null
     setTool(nextTool)
+  }
+
+  const goToPage = () => {
+    if (!pdf) {
+      return
+    }
+
+    const requestedPage = Number.parseInt(pageInput, 10)
+    if (!Number.isFinite(requestedPage)) {
+      setPageInput(String(pageNumber))
+      return
+    }
+
+    setPageNumber(clamp(requestedPage, 1, pdf.numPages))
   }
 
   return (
@@ -392,7 +464,7 @@ function App() {
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">{pdfName || 'Open a PDF'}</p>
             <p className="text-xs text-zinc-500">
-              {pdf ? `Page ${pageNumber} of ${pdf.numPages}` : 'Transparent annotation layer'}
+              {pdf ? `Saved locally - ${pdf.numPages} pages` : 'Transparent annotation layer'}
             </p>
           </div>
 
@@ -472,6 +544,30 @@ function App() {
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>
+
+          <form
+            className="flex h-10 items-center gap-1 rounded-md border border-zinc-200 bg-white px-2"
+            onSubmit={(event) => {
+              event.preventDefault()
+              goToPage()
+            }}
+          >
+            <Hash className="h-4 w-4 text-zinc-500" />
+            <input
+              aria-label="Go to page"
+              className="h-8 w-14 bg-transparent text-center text-sm font-medium tabular-nums text-zinc-950 outline-none"
+              disabled={!pdf}
+              inputMode="numeric"
+              min="1"
+              max={pdf?.numPages}
+              pattern="[0-9]*"
+              type="number"
+              value={pageInput}
+              onBlur={goToPage}
+              onChange={(event) => setPageInput(event.target.value)}
+            />
+            <span className="text-xs text-zinc-400">/ {pdf?.numPages ?? 0}</span>
+          </form>
 
           <button
             type="button"
@@ -617,6 +713,74 @@ function drawStroke(context: CanvasRenderingContext2D, stroke: Stroke) {
 
   context.stroke()
   context.restore()
+}
+
+function openPdfStore() {
+  return new Promise<IDBDatabase>((resolve, reject) => {
+    const request = indexedDB.open(PDF_STORE_DB, 1)
+
+    request.onupgradeneeded = () => {
+      request.result.createObjectStore(PDF_STORE_NAME)
+    }
+    request.onerror = () => reject(request.error ?? new Error('Could not open local PDF storage.'))
+    request.onsuccess = () => resolve(request.result)
+  })
+}
+
+async function readStoredPdf() {
+  const database = await openPdfStore()
+
+  return new Promise<StoredPdf | null>((resolve, reject) => {
+    const transaction = database.transaction(PDF_STORE_NAME, 'readonly')
+    const store = transaction.objectStore(PDF_STORE_NAME)
+    const request = store.get(LAST_PDF_KEY)
+
+    request.onerror = () => reject(request.error ?? new Error('Could not read saved PDF.'))
+    request.onsuccess = () => resolve((request.result as StoredPdf | undefined) ?? null)
+    transaction.oncomplete = () => database.close()
+  })
+}
+
+async function saveStoredPdf(pdf: StoredPdf) {
+  if (!('indexedDB' in window)) {
+    return
+  }
+
+  const database = await openPdfStore()
+
+  return new Promise<void>((resolve, reject) => {
+    const transaction = database.transaction(PDF_STORE_NAME, 'readwrite')
+    const store = transaction.objectStore(PDF_STORE_NAME)
+    const request = store.put(pdf, LAST_PDF_KEY)
+
+    request.onerror = () => reject(request.error ?? new Error('Could not save PDF locally.'))
+    transaction.onerror = () => reject(transaction.error ?? new Error('Could not save PDF locally.'))
+    transaction.oncomplete = () => {
+      database.close()
+      resolve()
+    }
+  })
+}
+
+async function clearStoredPdf() {
+  if (!('indexedDB' in window)) {
+    return
+  }
+
+  const database = await openPdfStore()
+
+  return new Promise<void>((resolve, reject) => {
+    const transaction = database.transaction(PDF_STORE_NAME, 'readwrite')
+    const store = transaction.objectStore(PDF_STORE_NAME)
+    const request = store.delete(LAST_PDF_KEY)
+
+    request.onerror = () => reject(request.error ?? new Error('Could not clear saved PDF.'))
+    transaction.onerror = () => reject(transaction.error ?? new Error('Could not clear saved PDF.'))
+    transaction.oncomplete = () => {
+      database.close()
+      resolve()
+    }
+  })
 }
 
 export default App
