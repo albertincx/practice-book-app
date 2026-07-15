@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 - **IndexedDB PDF & State Persistence**: Implemented local caching of both the active PDF document (`ArrayBuffer`) and its associated viewer state (current page, zoom level, opacity, pen settings, and drawn strokes) in IndexedDB, enabling automatic restoration on page reload.
 - **Direct Page Navigation**: Added a numeric input box in the header toolbar to navigate directly to any page by number.
 - **Local PDF.js WASM Fallbacks**: Configured PDF.js to load WebAssembly support files locally from `/pdfjs/wasm/` for better performance and reliability.
+- **Local Storage Settings & Deletion**: Added a settings panel displaying the total size of locally saved PDF and drawings, with a button to permanently clear local storage and reset the workspace.
 
 ### Fixed
 - **Lint Command Target**: Corrected the `lint` script command in `package.json` to run only on the `src` directory (`oxlint src`).

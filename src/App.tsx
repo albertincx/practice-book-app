@@ -10,8 +10,10 @@ import {
   Minus,
   Plus,
   RotateCcw,
+  Settings,
   Trash2,
   Undo2,
+  X,
 } from 'lucide-react'
 import * as pdfjsLib from 'pdfjs-dist'
 import type { PDFDocumentProxy, PDFPageProxy } from 'pdfjs-dist'
@@ -77,6 +79,18 @@ function formatZoom(scale: number) {
   return `${Math.round(scale * 100)}%`
 }
 
+function formatBytes(bytes: number) {
+  if (!bytes) {
+    return '0 B'
+  }
+
+  const units = ['B', 'KB', 'MB', 'GB']
+  const unitIndex = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+  const value = bytes / 1024 ** unitIndex
+
+  return `${value.toFixed(value >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`
+}
+
 function App() {
   const pdfCanvasRef = useRef<HTMLCanvasElement | null>(null)
   const inkCanvasRef = useRef<HTMLCanvasElement | null>(null)
@@ -98,6 +112,8 @@ function App() {
   const [penWidth, setPenWidth] = useState(4)
   const [opacity, setOpacity] = useState(0.65)
   const [isLoading, setIsLoading] = useState(false)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [localDataSize, setLocalDataSize] = useState<number | null>(null)
   const [error, setError] = useState('')
 
   const pageStrokes = useMemo(
@@ -172,6 +188,14 @@ function App() {
 
     return () => window.clearTimeout(saveTimer)
   }, [opacity, pageNumber, pdf, penColor, penWidth, strokes, zoom])
+
+  useEffect(() => {
+    if (!isSettingsOpen) {
+      return
+    }
+
+    void refreshLocalDataSize()
+  }, [isSettingsOpen])
 
   useEffect(() => {
     if (!pdf) {
@@ -479,6 +503,37 @@ function App() {
     void clearStoredPdf()
   }
 
+  const refreshLocalDataSize = async () => {
+    try {
+      setLocalDataSize(await getStoredPdfSize())
+    } catch (storageError) {
+      setLocalDataSize(null)
+      setError(storageError instanceof Error ? storageError.message : 'Could not read local storage size.')
+    }
+  }
+
+  const deleteLocalData = async () => {
+    const shouldDelete = window.confirm('Delete the locally saved PDF and all drawings?')
+    if (!shouldDelete) {
+      return
+    }
+
+    cancelActiveStroke()
+    pointersRef.current.clear()
+    pinchStateRef.current = null
+    hasOpenedPdfRef.current = false
+    setPdf(null)
+    setPdfName('')
+    setPageNumber(1)
+    setPageInput('1')
+    setZoom(1)
+    setStrokes([])
+    setPageSize(null)
+    await clearStoredPdf()
+    setLocalDataSize(0)
+    setIsSettingsOpen(false)
+  }
+
   const changeTool = (nextTool: Tool) => {
     cancelActiveStroke()
     pointersRef.current.clear()
@@ -537,6 +592,15 @@ function App() {
               <RotateCcw className="h-5 w-5" />
             </button>
           ) : null}
+
+          <button
+            type="button"
+            aria-label="Settings"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-700"
+            onClick={() => setIsSettingsOpen(true)}
+          >
+            <Settings className="h-5 w-5" />
+          </button>
         </div>
       </header>
 
@@ -745,6 +809,41 @@ function App() {
           </div>
         ) : null}
       </section>
+
+      {isSettingsOpen ? (
+        <div className="fixed inset-0 z-40 flex items-end bg-black/30 p-3 sm:items-center sm:justify-center">
+          <section className="w-full rounded-lg bg-white p-4 shadow-2xl ring-1 ring-zinc-200 sm:max-w-sm">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-base font-semibold">Settings</h2>
+              <button
+                type="button"
+                aria-label="Close settings"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-zinc-200 text-zinc-700"
+                onClick={() => setIsSettingsOpen(false)}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="mt-4 rounded-md border border-zinc-200 bg-zinc-50 p-3">
+              <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Local data</p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums text-zinc-950">
+                {localDataSize === null ? '...' : formatBytes(localDataSize)}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-red-600 px-4 text-sm font-medium text-white disabled:bg-zinc-300"
+              disabled={!localDataSize}
+              onClick={() => void deleteLocalData()}
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete local data
+            </button>
+          </section>
+        </div>
+      ) : null}
     </main>
   )
 }
@@ -856,6 +955,31 @@ async function clearStoredPdf() {
       resolve()
     }
   })
+}
+
+async function getStoredPdfSize() {
+  if (!('indexedDB' in window)) {
+    return 0
+  }
+
+  const storedPdf = await readStoredPdf()
+  if (!storedPdf) {
+    return 0
+  }
+
+  const metadataSize = new Blob([
+    JSON.stringify({
+      name: storedPdf.name,
+      opacity: storedPdf.opacity,
+      pageNumber: storedPdf.pageNumber,
+      penColor: storedPdf.penColor,
+      penWidth: storedPdf.penWidth,
+      strokes: storedPdf.strokes ?? [],
+      zoom: storedPdf.zoom,
+    }),
+  ]).size
+
+  return storedPdf.data.byteLength + metadataSize
 }
 
 export default App
