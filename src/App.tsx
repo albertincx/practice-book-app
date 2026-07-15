@@ -4,17 +4,21 @@ import {
   ChevronLeft,
   ChevronRight,
   Eraser,
+  FileText,
   FileUp,
+  FolderOpen,
   Hash,
   Hand,
+  Menu,
   Minus,
   Plus,
-  RotateCcw,
   Settings,
+  Sliders,
   Type,
   Trash2,
   Undo2,
   X,
+  Heart,
 } from 'lucide-react'
 import * as pdfjsLib from 'pdfjs-dist'
 import type { PDFDocumentProxy, PDFPageProxy } from 'pdfjs-dist'
@@ -73,8 +77,9 @@ type TextDragState = {
   textId: string
 }
 
-type StoredPdf = {
-  data: ArrayBuffer
+
+type PdfMetadata = {
+  id: string
   name: string
   opacity?: number
   paintingEnabled?: boolean
@@ -84,15 +89,120 @@ type StoredPdf = {
   strokes?: Stroke[]
   texts?: TextAnnotation[]
   zoom?: number
+  updatedAt: number
 }
 
 const MIN_ZOOM = 0.5
 const MAX_ZOOM = 3
 const ZOOM_STEP = 0.25
 const PEN_COLORS = ['#111827', '#dc2626', '#2563eb', '#16a34a', '#f59e0b']
-const PDF_STORE_DB = 'pdf-ink-prototype'
+const PDF_STORE_DB = 'pdf-learn-prototype'
 const PDF_STORE_NAME = 'pdfs'
 const LAST_PDF_KEY = 'last-opened'
+const DONATE_URL = 'https://boosty.to/safiullin' // TODO: Replace with your actual donation link
+
+type Lang = 'en' | 'ru'
+
+const TRANSLATIONS = {
+  en: {
+    libraryTitle: 'PDF Library',
+    addPdf: 'Add PDF',
+    emptyLibrary: 'Library is empty',
+    emptyLibrarySub: 'Upload a file to get started',
+    drawings: 'Drawings',
+    texts: 'Texts',
+    pageShort: 'Pg',
+    deleteConfirm: 'Delete "{name}" and all drawings/annotations?',
+    confirmClearAll: 'Delete the entire PDF library and all drawings?',
+    emptyHeader: 'Library is empty',
+    selectOrUpload: 'Select or upload a PDF file',
+    closePdf: 'Close PDF',
+    settings: 'Settings',
+    drawMode: 'Draw mode',
+    moveMode: 'Move mode',
+    toggleBrushSettings: 'Toggle brush settings',
+    insertText: 'Insert text',
+    zoomOut: 'Zoom out',
+    zoomIn: 'Zoom in',
+    prevPage: 'Previous page',
+    nextPage: 'Next page',
+    goToPage: 'Go to page',
+    undo: 'Undo',
+    clearPage: 'Clear page',
+    tapToPlace: 'Tap to place text',
+    loading: 'Loading',
+    localData: 'Local data',
+    painting: 'Painting',
+    deleteLocalData: 'Delete local data',
+    cancel: 'Cancel',
+    ok: 'OK',
+    useColor: 'Use pen color',
+    penSize: 'Pen size',
+    opacity: 'Opacity',
+    savedLocally: 'Saved locally',
+    pages: 'pages',
+    confirmClosePdf: 'Close the current PDF?',
+    aboutTitle: 'About PDF Learn',
+    aboutDesc: 'PDF Learn is a secure, fast, and completely free tool for editing PDFs directly in your browser. Draw, write, sign, and annotate documents without installing any software.',
+    privacyNote: '100% Private: All processing happens locally on your device. Your documents are never uploaded to any server.',
+    featuresTitle: 'Key Features',
+    featureDraw: 'Draw & Sketch: Mark up files with custom pen color, thickness, and opacity.',
+    featureText: 'Add Text: Insert text blocks anywhere to fill forms or leave comments.',
+    featureLocal: 'Local Library: Save documents and annotations securely in your browser\'s local database.',
+    donateTitle: 'Support the project',
+    donateBtn: 'Support with Donation',
+    donateDesc: 'If PDF Learn was helpful to you, consider supporting the developer!',
+  },
+  ru: {
+    libraryTitle: 'Библиотека PDF',
+    addPdf: 'Добавить PDF',
+    emptyLibrary: 'Библиотека пуста',
+    emptyLibrarySub: 'Загрузите файл для начала работы',
+    drawings: 'Рисунков',
+    texts: 'Текста',
+    pageShort: 'Стр',
+    deleteConfirm: 'Удалить "{name}" и все рисунки/аннотации?',
+    confirmClearAll: 'Удалить всю библиотеку PDF и все рисунки?',
+    emptyHeader: 'Библиотека пуста',
+    selectOrUpload: 'Выберите или загрузите PDF файл',
+    closePdf: 'Закрыть PDF',
+    settings: 'Настройки',
+    drawMode: 'Режим рисования',
+    moveMode: 'Режим перемещения',
+    toggleBrushSettings: 'Настройки кисти',
+    insertText: 'Вставить текст',
+    zoomOut: 'Уменьшить',
+    zoomIn: 'Увеличить',
+    prevPage: 'Предыдущая страница',
+    nextPage: 'Следующая страница',
+    goToPage: 'Перейти к странице',
+    undo: 'Отменить действие',
+    clearPage: 'Очистить страницу',
+    tapToPlace: 'Нажмите, чтобы разместить текст',
+    loading: 'Загрузка',
+    localData: 'Локальные данные',
+    painting: 'Рисование',
+    deleteLocalData: 'Удалить всю библиотеку',
+    cancel: 'Отмена',
+    ok: 'OK',
+    useColor: 'Выбрать цвет кисти',
+    penSize: 'Размер кисти',
+    opacity: 'Прозрачность',
+    savedLocally: 'Сохранено локально',
+    pages: 'страниц',
+    confirmClosePdf: 'Закрыть текущий PDF?',
+    aboutTitle: 'О сервисе PDF Learn',
+    aboutDesc: 'PDF Learn — это конфиденциальный, быстрый и бесплатный инструмент для редактирования PDF прямо в браузере. Рисуйте, пишите, подписывайте и аннотируйте документы без установки каких-либо программ.',
+    privacyNote: '100% Конфиденциально: Все операции выполняются локально на вашем устройстве. Ваши документы никогда не загружаются на сервер.',
+    featuresTitle: 'Основные возможности',
+    featureDraw: 'Рисование: Выделяйте главное, рисуйте схемы или подписывайте документы.',
+    featureText: 'Вставка текста: Добавляйте печатные заметки и заполняйте формы.',
+    featureLocal: 'Локальная база: Сохраняйте документы и историю правок прямо в браузере.',
+    donateTitle: 'Поддержать проект',
+    donateBtn: 'Поддержать автора',
+    donateDesc: 'Если PDF Learn оказался вам полезен, вы можете поддержать разработчика!',
+  }
+}
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max)
@@ -144,6 +254,28 @@ function App() {
   const [isTextDialogOpen, setIsTextDialogOpen] = useState(false)
   const [localDataSize, setLocalDataSize] = useState<number | null>(null)
   const [error, setError] = useState('')
+  const [activePdfId, setActivePdfId] = useState<string | null>(null)
+  const [pdfList, setPdfList] = useState<PdfMetadata[]>([])
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const [showBrushSettings, setShowBrushSettings] = useState(true)
+  const [lang, setLang] = useState<Lang>(() => {
+    const saved = localStorage.getItem('pdf-lang')
+    return (saved === 'ru' || saved === 'en') ? saved : 'en'
+  })
+
+  useEffect(() => {
+    localStorage.setItem('pdf-lang', lang)
+  }, [lang])
+
+  useEffect(() => {
+    if (pdfName) {
+      document.title = `${pdfName} — PDF Learn`
+    } else {
+      document.title = lang === 'ru'
+        ? 'PDF Learn — Редактор PDF: рисование, заметки и аннотации онлайн'
+        : 'PDF Learn — PDF Editor: Draw and Annotate PDF Online'
+    }
+  }, [pdfName, lang])
 
   const pageStrokes = useMemo(
     () => strokes.filter((stroke) => stroke.page === pageNumber),
@@ -158,48 +290,138 @@ function App() {
     setPageInput(String(pageNumber))
   }, [pageNumber])
 
+  const refreshPdfList = async () => {
+    try {
+      const list = await getAllPdfMetadata()
+      setPdfList(list)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not refresh PDF library list.')
+    }
+  }
+
+  const loadPdfFromLibrary = async (id: string) => {
+    setIsLoading(true)
+    setError('')
+    try {
+      const metadata = await getPdfMetadata(id)
+      if (!metadata) {
+        throw new Error('PDF metadata not found.')
+      }
+      const data = await getPdfFile(id)
+
+      await openPdfData(data, metadata.name, {
+        clearStrokes: true,
+        pageNumber: metadata.pageNumber,
+        strokes: metadata.strokes,
+        texts: metadata.texts,
+        zoom: metadata.zoom,
+      })
+
+      setActivePdfId(id)
+      localStorage.setItem('active-pdf-id', id)
+
+      if (metadata.penColor) {
+        setPenColor(metadata.penColor)
+      }
+      if (metadata.penWidth !== undefined) {
+        setPenWidth(metadata.penWidth)
+      }
+      if (metadata.opacity !== undefined) {
+        setOpacity(metadata.opacity)
+      }
+      if (metadata.paintingEnabled !== undefined) {
+        setIsPaintingEnabled(metadata.paintingEnabled)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load PDF.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const closeActiveDocument = () => {
+    cancelActiveStroke()
+    pointersRef.current.clear()
+    pinchStateRef.current = null
+    textDragRef.current = null
+    setPdf(null)
+    setPdfName('')
+    setPageNumber(1)
+    setPageInput('1')
+    setZoom(1)
+    setStrokes([])
+    setTexts([])
+    setPendingText('')
+    setTextDraft('')
+    setPageSize(null)
+    setError('')
+    hasOpenedPdfRef.current = false
+    setActivePdfId(null)
+    localStorage.removeItem('active-pdf-id')
+  }
+
+  const handleDeletePdf = async (id: string, event: React.MouseEvent) => {
+    event.stopPropagation()
+    const metadata = pdfList.find((item) => item.id === id)
+    const name = metadata?.name || 'this PDF'
+    const shouldDelete = window.confirm(t.deleteConfirm.replace('{name}', name))
+    if (!shouldDelete) {
+      return
+    }
+
+    try {
+      await deletePdfFromLibrary(id)
+      const list = await getAllPdfMetadata()
+      setPdfList(list)
+
+      if (activePdfId === id) {
+        if (list.length > 0) {
+          await loadPdfFromLibrary(list[0].id)
+        } else {
+          closeActiveDocument()
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete PDF.')
+    }
+  }
+
   useEffect(() => {
     let isCancelled = false
 
-    const restoreLastPdf = async () => {
+    const initApp = async () => {
       if (!('indexedDB' in window)) {
         return
       }
 
       try {
-        const storedPdf = await readStoredPdf()
-        if (!storedPdf || isCancelled) {
-          return
+        const migratedId = await migrateDatabaseIfNeeded()
+        let activeId = migratedId
+        if (!activeId) {
+          activeId = localStorage.getItem('active-pdf-id')
+        } else {
+          localStorage.setItem('active-pdf-id', activeId)
         }
 
-        await openPdfData(storedPdf.data, storedPdf.name, {
-          clearStrokes: true,
-          pageNumber: storedPdf.pageNumber,
-          persist: false,
-          strokes: storedPdf.strokes,
-          texts: storedPdf.texts,
-          zoom: storedPdf.zoom,
-        })
-        if (storedPdf.penColor) {
-          setPenColor(storedPdf.penColor)
+        const list = await getAllPdfMetadata()
+        if (isCancelled) {
+          return
         }
-        if (storedPdf.penWidth !== undefined) {
-          setPenWidth(storedPdf.penWidth)
+        setPdfList(list)
+
+        if (activeId && list.some((item) => item.id === activeId)) {
+          await loadPdfFromLibrary(activeId)
+        } else if (list.length > 0) {
+          await loadPdfFromLibrary(list[0].id)
         }
-        if (storedPdf.opacity !== undefined) {
-          setOpacity(storedPdf.opacity)
-        }
-        if (storedPdf.paintingEnabled !== undefined) {
-          setIsPaintingEnabled(storedPdf.paintingEnabled)
-        }
-      } catch (restoreError) {
+      } catch (initError) {
         if (!isCancelled) {
-          setError(restoreError instanceof Error ? restoreError.message : 'Could not restore the saved PDF.')
+          setError(initError instanceof Error ? initError.message : 'Could not initialize application data.')
         }
       }
     }
 
-    void restoreLastPdf()
+    void initApp()
 
     return () => {
       isCancelled = true
@@ -208,12 +430,12 @@ function App() {
   }, [])
 
   useEffect(() => {
-    if (!pdf || !hasOpenedPdfRef.current) {
+    if (!activePdfId || !pdf || !hasOpenedPdfRef.current) {
       return
     }
 
     const saveTimer = window.setTimeout(() => {
-      void mergeStoredPdf({
+      void mergePdfMetadata(activePdfId, {
         opacity,
         paintingEnabled: isPaintingEnabled,
         pageNumber,
@@ -222,11 +444,13 @@ function App() {
         strokes,
         texts,
         zoom,
+      }).then(() => {
+        void refreshPdfList()
       })
     }, 250)
 
     return () => window.clearTimeout(saveTimer)
-  }, [isPaintingEnabled, opacity, pageNumber, pdf, penColor, penWidth, strokes, texts, zoom])
+  }, [activePdfId, isPaintingEnabled, opacity, pageNumber, pdf, penColor, penWidth, strokes, texts, zoom])
 
   useEffect(() => {
     if (!isSettingsOpen) {
@@ -336,7 +560,6 @@ function App() {
     options: {
       clearStrokes: boolean
       pageNumber?: number
-      persist: boolean
       strokes?: Stroke[]
       texts?: TextAnnotation[]
       zoom?: number
@@ -368,20 +591,6 @@ function App() {
         setTexts(options.texts ?? [])
       }
       hasOpenedPdfRef.current = true
-      if (options.persist) {
-        await saveStoredPdf({
-          data,
-          name,
-          opacity,
-          paintingEnabled: isPaintingEnabled,
-          pageNumber: 1,
-          penColor,
-          penWidth,
-          strokes: [],
-          texts: [],
-          zoom: 1,
-        })
-      }
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Could not open this PDF.')
     } finally {
@@ -390,8 +599,15 @@ function App() {
   }
 
   const loadPdf = async (file: File) => {
-    const data = await file.arrayBuffer()
-    await openPdfData(data, file.name, { clearStrokes: true, persist: true })
+    try {
+      const data = await file.arrayBuffer()
+      const nextId = crypto.randomUUID()
+      await savePdfToLibrary(nextId, file.name, data)
+      await refreshPdfList()
+      await loadPdfFromLibrary(nextId)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not load PDF.')
+    }
   }
 
   const updateZoom = (nextZoom: number) => {
@@ -587,29 +803,9 @@ function App() {
     setTexts((current) => current.filter((text) => text.page !== pageNumber))
   }
 
-  const resetDocument = () => {
-    cancelActiveStroke()
-    pointersRef.current.clear()
-    pinchStateRef.current = null
-    textDragRef.current = null
-    setPdf(null)
-    setPdfName('')
-    setPageNumber(1)
-    setPageInput('1')
-    setZoom(1)
-    setStrokes([])
-    setTexts([])
-    setPendingText('')
-    setTextDraft('')
-    setPageSize(null)
-    setError('')
-    hasOpenedPdfRef.current = false
-    void clearStoredPdf()
-  }
-
   const refreshLocalDataSize = async () => {
     try {
-      setLocalDataSize(await getStoredPdfSize())
+      setLocalDataSize(await getLibraryTotalSize())
     } catch (storageError) {
       setLocalDataSize(null)
       setError(storageError instanceof Error ? storageError.message : 'Could not read local storage size.')
@@ -617,7 +813,7 @@ function App() {
   }
 
   const deleteLocalData = async () => {
-    const shouldDelete = window.confirm('Delete the locally saved PDF and all drawings?')
+    const shouldDelete = window.confirm(t.confirmClearAll)
     if (!shouldDelete) {
       return
     }
@@ -636,9 +832,12 @@ function App() {
     setPendingText('')
     setTextDraft('')
     setPageSize(null)
-    await clearStoredPdf()
+    setActivePdfId(null)
+    setPdfList([])
+    await clearAllLocalData()
     setLocalDataSize(0)
     setIsSettingsOpen(false)
+    localStorage.removeItem('active-pdf-id')
   }
 
   const changeTool = (nextTool: Tool) => {
@@ -703,12 +902,44 @@ function App() {
     setPageNumber(clamp(requestedPage, 1, pdf.numPages))
   }
 
+  const t = TRANSLATIONS[lang]
+
   return (
-    <main className="flex min-h-svh flex-col bg-zinc-100 text-zinc-950">
-      <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white/95 px-3 py-2 shadow-sm backdrop-blur">
-        <div className="mx-auto flex max-w-5xl items-center gap-2">
-          <label className="inline-flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-md border border-zinc-200 bg-zinc-950 text-white shadow-sm active:scale-95">
-            <FileUp className="h-5 w-5" />
+    <div className="flex min-h-svh bg-zinc-100 text-zinc-950 overflow-hidden relative">
+      {/* Sidebar overlay backdrop for mobile */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-zinc-950/20 backdrop-blur-sm lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`
+          fixed inset-y-0 left-0 z-40 flex w-80 flex-col border-r border-zinc-200 bg-white transition-all duration-300 ease-in-out
+          lg:static lg:z-0
+          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:w-0 lg:-translate-x-full lg:border-r-0'}
+        `}
+      >
+        <div className="flex h-[57px] items-center justify-between border-b border-zinc-200 px-4 shrink-0">
+          <div className="flex items-center gap-2 font-semibold text-zinc-800">
+            <FolderOpen className="h-5 w-5 text-zinc-500" />
+            <span>{t.libraryTitle}</span>
+          </div>
+          <button
+            type="button"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 lg:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="p-3 border-b border-zinc-100 shrink-0">
+          <label className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-zinc-950 py-2.5 px-4 text-sm font-medium text-white shadow hover:bg-zinc-800 active:scale-95 transition-all">
+            <FileUp className="h-4 w-4" />
+            <span>{t.addPdf}</span>
             <input
               className="sr-only"
               type="file"
@@ -722,349 +953,478 @@ function App() {
               }}
             />
           </label>
-
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">{pdfName || 'Open a PDF'}</p>
-            <p className="text-xs text-zinc-500">
-              {pdf ? `Saved locally - ${pdf.numPages} pages` : 'Transparent annotation layer'}
-            </p>
-          </div>
-
-          {pdf ? (
-            <button
-              type="button"
-              aria-label="Close PDF"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-700"
-              onClick={resetDocument}
-            >
-              <RotateCcw className="h-5 w-5" />
-            </button>
-          ) : null}
-
-          <button
-            type="button"
-            aria-label="Settings"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-700"
-            onClick={() => setIsSettingsOpen(true)}
-          >
-            <Settings className="h-5 w-5" />
-          </button>
         </div>
-      </header>
 
-      <section className="sticky top-[57px] z-10 border-b border-zinc-200 bg-white px-3 py-2">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-2">
-          <div className="flex rounded-md border border-zinc-200 bg-zinc-100 p-1">
-            <button
-              type="button"
-              aria-label="Draw mode"
-              className={`inline-flex h-9 w-10 items-center justify-center rounded ${tool === 'draw' ? 'bg-white text-zinc-950 shadow-sm' : 'text-zinc-500'}`}
-              onClick={() => changeTool('draw')}
-            >
-              <Brush className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              aria-label="Move mode"
-              className={`inline-flex h-9 w-10 items-center justify-center rounded ${tool === 'move' ? 'bg-white text-zinc-950 shadow-sm' : 'text-zinc-500'}`}
-              onClick={() => changeTool('move')}
-            >
-              <Hand className="h-4 w-4" />
-            </button>
-          </div>
-
-          <button
-            type="button"
-            aria-label="Insert text"
-            className={`inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-700 disabled:text-zinc-300 ${pendingText ? 'ring-2 ring-zinc-950' : ''}`}
-            disabled={!pdf}
-            onClick={openTextDialog}
-          >
-            <Type className="h-4 w-4" />
-          </button>
-
-          <div className="flex items-center rounded-md border border-zinc-200 bg-white">
-            <button
-              type="button"
-              aria-label="Zoom out"
-              className="inline-flex h-10 w-10 items-center justify-center text-zinc-700 disabled:text-zinc-300"
-              disabled={!pdf || zoom <= MIN_ZOOM}
-              onClick={() => updateZoom(zoom - ZOOM_STEP)}
-            >
-              <Minus className="h-4 w-4" />
-            </button>
-            <span className="w-14 text-center text-sm font-medium tabular-nums">{formatZoom(zoom)}</span>
-            <button
-              type="button"
-              aria-label="Zoom in"
-              className="inline-flex h-10 w-10 items-center justify-center text-zinc-700 disabled:text-zinc-300"
-              disabled={!pdf || zoom >= MAX_ZOOM}
-              onClick={() => updateZoom(zoom + ZOOM_STEP)}
-            >
-              <Plus className="h-4 w-4" />
-            </button>
-          </div>
-
-          <div className="flex items-center rounded-md border border-zinc-200 bg-white">
-            <button
-              type="button"
-              aria-label="Previous page"
-              className="inline-flex h-10 w-10 items-center justify-center text-zinc-700 disabled:text-zinc-300"
-              disabled={!pdf || pageNumber <= 1}
-              onClick={() => setPageNumber((current) => current - 1)}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              aria-label="Next page"
-              className="inline-flex h-10 w-10 items-center justify-center text-zinc-700 disabled:text-zinc-300"
-              disabled={!pdf || pageNumber >= pdf.numPages}
-              onClick={() => setPageNumber((current) => current + 1)}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
-
-          <form
-            className="flex h-10 items-center gap-1 rounded-md border border-zinc-200 bg-white px-2"
-            onSubmit={(event) => {
-              event.preventDefault()
-              goToPage()
-            }}
-          >
-            <Hash className="h-4 w-4 text-zinc-500" />
-            <input
-              aria-label="Go to page"
-              className="h-8 w-14 bg-transparent text-center text-sm font-medium tabular-nums text-zinc-950 outline-none"
-              disabled={!pdf}
-              inputMode="numeric"
-              min="1"
-              max={pdf?.numPages}
-              pattern="[0-9]*"
-              type="number"
-              value={pageInput}
-              onBlur={goToPage}
-              onChange={(event) => setPageInput(event.target.value)}
-            />
-            <span className="text-xs text-zinc-400">/ {pdf?.numPages ?? 0}</span>
-          </form>
-
-          <button
-            type="button"
-            aria-label="Undo"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-700 disabled:text-zinc-300"
-            disabled={!pageStrokes.length && !pageTexts.length}
-            onClick={undoPageStroke}
-          >
-            <Undo2 className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            aria-label="Clear page"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-700 disabled:text-zinc-300"
-            disabled={!pageStrokes.length && !pageTexts.length}
-            onClick={clearPage}
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
-        </div>
-      </section>
-
-      <section className="border-b border-zinc-200 bg-white px-3 py-2">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-3">
-          <div className="flex items-center gap-1">
-            {PEN_COLORS.map((color) => (
-              <button
-                type="button"
-                key={color}
-                aria-label={`Use pen color ${color}`}
-                className={`h-8 w-8 rounded-full border-2 ${penColor === color ? 'border-zinc-950' : 'border-zinc-200'}`}
-                style={{ backgroundColor: color }}
-                onClick={() => setPenColor(color)}
-              />
-            ))}
-          </div>
-
-          <label className="flex min-w-32 flex-1 items-center gap-2 text-xs font-medium text-zinc-600">
-            <Brush className="h-4 w-4 shrink-0" />
-            <input
-              type="range"
-              min="1"
-              max="14"
-              value={penWidth}
-              className="w-full accent-zinc-950"
-              onChange={(event) => setPenWidth(Number(event.target.value))}
-            />
-          </label>
-
-          <label className="flex min-w-32 flex-1 items-center gap-2 text-xs font-medium text-zinc-600">
-            <Eraser className="h-4 w-4 shrink-0 opacity-60" />
-            <input
-              type="range"
-              min="0.2"
-              max="1"
-              step="0.05"
-              value={opacity}
-              className="w-full accent-zinc-950"
-              onChange={(event) => setOpacity(Number(event.target.value))}
-            />
-          </label>
-        </div>
-      </section>
-
-      <section className="relative flex flex-1 overflow-auto px-3 py-4">
-        {!pdf ? (
-          <div className="m-auto flex max-w-sm flex-col items-center gap-4 rounded-lg border border-dashed border-zinc-300 bg-white p-8 text-center shadow-sm">
-            <FileUp className="h-10 w-10 text-zinc-400" />
-            <label className="inline-flex cursor-pointer items-center justify-center rounded-md bg-zinc-950 px-4 py-2 text-sm font-medium text-white active:scale-95">
-              Open PDF
-              <input
-                className="sr-only"
-                type="file"
-                accept="application/pdf"
-                onChange={(event) => {
-                  const file = event.target.files?.[0]
-                  if (file) {
-                    void loadPdf(file)
-                  }
-                  event.currentTarget.value = ''
-                }}
-              />
-            </label>
-          </div>
-        ) : (
-          <div className="mx-auto min-w-max pb-24">
-            <div
-              className="relative overflow-hidden rounded-md bg-white shadow-xl ring-1 ring-zinc-200"
-              style={{
-                width: pageSize ? pageSize.width * zoom : undefined,
-                height: pageSize ? pageSize.height * zoom : undefined,
-              }}
-            >
-              <canvas ref={pdfCanvasRef} className="absolute inset-0" />
-              <canvas
-                ref={inkCanvasRef}
-                className={`absolute inset-0 ${tool === 'draw' ? 'cursor-crosshair' : 'pointer-events-none'}`}
-                style={{ touchAction: tool === 'draw' ? 'none' : 'auto' }}
-                onPointerDown={handlePointerDown}
-                onPointerMove={handlePointerMove}
-                onPointerUp={finishStroke}
-                onPointerCancel={finishStroke}
-              />
-              {isLoading ? (
-                <div className="absolute inset-0 grid place-items-center bg-white/70 text-sm font-medium text-zinc-600">
-                  Loading
-                </div>
-              ) : null}
-              {pendingText ? (
-                <div className="pointer-events-none absolute left-2 top-2 rounded bg-zinc-950/80 px-2 py-1 text-xs font-medium text-white">
-                  Tap to place text
-                </div>
-              ) : null}
+        <div className="flex-1 overflow-y-auto p-2 space-y-1">
+          {pdfList.length === 0 ? (
+            <div className="py-12 text-center text-zinc-400">
+              <FileText className="mx-auto h-8 w-8 opacity-40 mb-2" />
+              <p className="text-xs">{t.emptyLibrary}</p>
+              <p className="text-[10px] mt-1">{t.emptyLibrarySub}</p>
             </div>
-          </div>
-        )}
+          ) : (
+            pdfList.map((item) => {
+              const isActive = item.id === activePdfId
+              return (
+                <div
+                  key={item.id}
+                  onClick={() => void loadPdfFromLibrary(item.id)}
+                  className={`
+                    group relative flex cursor-pointer gap-3 rounded-lg p-2.5 transition-all text-left
+                    ${isActive ? 'bg-zinc-100 border-l-4 border-zinc-950 font-medium' : 'hover:bg-zinc-50 border-l-4 border-transparent'}
+                  `}
+                >
+                  <FileText className={`h-5 w-5 shrink-0 mt-0.5 ${isActive ? 'text-zinc-900' : 'text-zinc-400 group-hover:text-zinc-500'}`} />
+                  <div className="min-w-0 flex-1">
+                    <p className={`truncate text-sm ${isActive ? 'text-zinc-900 font-semibold' : 'text-zinc-700'}`}>
+                      {item.name}
+                    </p>
+                    <div className="flex items-center gap-1.5 mt-1 text-[10px] text-zinc-400">
+                      {item.strokes && item.strokes.length > 0 && (
+                        <span>{t.drawings}: {item.strokes.length}</span>
+                      )}
+                      {item.texts && item.texts.length > 0 && (
+                        <span>• {t.texts}: {item.texts.length}</span>
+                      )}
+                      <span>• {t.pageShort}: {item.pageNumber || 1}</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    aria-label={t.deleteConfirm.replace('"{name}"', item.name)}
+                    className="opacity-0 group-hover:opacity-100 focus:opacity-100 shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-md hover:bg-zinc-200 text-zinc-400 hover:text-red-600 transition-all self-center"
+                    onClick={(e) => void handleDeletePdf(item.id, e)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              )
+            })
+          )}
+        </div>
+      </aside>
 
-        {error ? (
-          <div className="fixed inset-x-3 bottom-3 z-30 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 shadow-lg">
-            {error}
-          </div>
-        ) : null}
-      </section>
+      {/* Main Content Area */}
+      <main className="flex flex-1 flex-col min-h-svh min-w-0 overflow-auto bg-zinc-100 text-zinc-950">
+        <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white/95 px-3 py-2 shadow-sm backdrop-blur shrink-0">
+          <div className="mx-auto flex max-w-5xl items-center gap-2">
+            <button
+              type="button"
+              aria-label={t.libraryTitle}
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 active:scale-95 transition-all"
+              onClick={() => setIsSidebarOpen((prev) => !prev)}
+            >
+              <Menu className="h-5 w-5" />
+            </button>
 
-      {isSettingsOpen ? (
-        <div className="fixed inset-0 z-40 flex items-end bg-black/30 p-3 sm:items-center sm:justify-center">
-          <section className="w-full rounded-lg bg-white p-4 shadow-2xl ring-1 ring-zinc-200 sm:max-w-sm">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-base font-semibold">Settings</h2>
-              <button
-                type="button"
-                aria-label="Close settings"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-zinc-200 text-zinc-700"
-                onClick={() => setIsSettingsOpen(false)}
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="mt-4 rounded-md border border-zinc-200 bg-zinc-50 p-3">
-              <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Local data</p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums text-zinc-950">
-                {localDataSize === null ? '...' : formatBytes(localDataSize)}
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">{pdfName || t.emptyHeader}</p>
+              <p className="text-xs text-zinc-500">
+                {pdf ? `${t.savedLocally} - ${pdf.numPages} ${t.pages}` : t.selectOrUpload}
               </p>
             </div>
 
-            <label className="mt-3 flex items-center justify-between gap-3 rounded-md border border-zinc-200 bg-white p-3">
-              <span className="text-sm font-medium text-zinc-800">Painting</span>
-              <input
-                checked={isPaintingEnabled}
-                className="h-5 w-5 accent-zinc-950"
-                type="checkbox"
-                onChange={(event) => {
-                  if (!event.target.checked) {
-                    cancelActiveStroke()
-                  }
-                  setIsPaintingEnabled(event.target.checked)
-                }}
-              />
-            </label>
 
             <button
               type="button"
-              className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-red-600 px-4 text-sm font-medium text-white disabled:bg-zinc-300"
-              disabled={!localDataSize}
-              onClick={() => void deleteLocalData()}
+              className="inline-flex h-10 px-2.5 items-center justify-center rounded-md border border-zinc-200 bg-white text-xs font-bold text-zinc-700 hover:bg-zinc-50 active:scale-95 transition-all"
+              onClick={() => setLang((prev) => (prev === 'en' ? 'ru' : 'en'))}
+            >
+              {lang === 'en' ? 'EN' : 'RU'}
+            </button>
+
+            <button
+              type="button"
+              aria-label={t.settings}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 active:scale-95"
+              onClick={() => setIsSettingsOpen(true)}
+            >
+              <Settings className="h-5 w-5" />
+            </button>
+          </div>
+        </header>
+
+        <section className="sticky top-[57px] z-10 border-b border-zinc-200 bg-white px-3 py-2">
+          <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-2">
+            <div className="flex rounded-md border border-zinc-200 bg-zinc-100 p-1 gap-0.5">
+              <button
+                type="button"
+                aria-label={t.drawMode}
+                className={`inline-flex h-9 w-10 items-center justify-center rounded ${tool === 'draw' ? 'bg-white text-zinc-950 shadow-sm' : 'text-zinc-500'}`}
+                onClick={() => changeTool('draw')}
+              >
+                <Brush className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                aria-label={t.moveMode}
+                className={`inline-flex h-9 w-10 items-center justify-center rounded ${tool === 'move' ? 'bg-white text-zinc-950 shadow-sm' : 'text-zinc-500'}`}
+                onClick={() => changeTool('move')}
+              >
+                <Hand className="h-4 w-4" />
+              </button>
+              {tool === 'draw' && (
+                <button
+                  type="button"
+                  aria-label={t.toggleBrushSettings}
+                  className={`inline-flex h-9 w-10 items-center justify-center rounded transition-colors ${showBrushSettings ? 'bg-zinc-200 text-zinc-950 hover:bg-zinc-300' : 'text-zinc-400 hover:text-zinc-600 hover:bg-zinc-200/50'}`}
+                  onClick={() => setShowBrushSettings((prev) => !prev)}
+                >
+                  <Sliders className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+
+            <button
+              type="button"
+              aria-label={t.insertText}
+              className={`inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-700 disabled:text-zinc-300 ${pendingText ? 'ring-2 ring-zinc-950' : ''}`}
+              disabled={!pdf}
+              onClick={openTextDialog}
+            >
+              <Type className="h-4 w-4" />
+            </button>
+
+            <div className="flex items-center rounded-md border border-zinc-200 bg-white">
+              <button
+                type="button"
+                aria-label={t.zoomOut}
+                className="inline-flex h-10 w-10 items-center justify-center text-zinc-700 disabled:text-zinc-300"
+                disabled={!pdf || zoom <= MIN_ZOOM}
+                onClick={() => updateZoom(zoom - ZOOM_STEP)}
+              >
+                <Minus className="h-4 w-4" />
+              </button>
+              <span className="w-14 text-center text-sm font-medium tabular-nums">{formatZoom(zoom)}</span>
+              <button
+                type="button"
+                aria-label={t.zoomIn}
+                className="inline-flex h-10 w-10 items-center justify-center text-zinc-700 disabled:text-zinc-300"
+                disabled={!pdf || zoom >= MAX_ZOOM}
+                onClick={() => updateZoom(zoom + ZOOM_STEP)}
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="flex items-center rounded-md border border-zinc-200 bg-white">
+              <button
+                type="button"
+                aria-label={t.prevPage}
+                className="inline-flex h-10 w-10 items-center justify-center text-zinc-700 disabled:text-zinc-300"
+                disabled={!pdf || pageNumber <= 1}
+                onClick={() => setPageNumber((current) => current - 1)}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                aria-label={t.nextPage}
+                className="inline-flex h-10 w-10 items-center justify-center text-zinc-700 disabled:text-zinc-300"
+                disabled={!pdf || pageNumber >= pdf.numPages}
+                onClick={() => setPageNumber((current) => current + 1)}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form
+              className="flex h-10 items-center gap-1 rounded-md border border-zinc-200 bg-white px-2"
+              onSubmit={(event) => {
+                event.preventDefault()
+                goToPage()
+              }}
+            >
+              <Hash className="h-4 w-4 text-zinc-500" />
+              <input
+                aria-label={t.goToPage}
+                className="h-8 w-14 bg-transparent text-center text-sm font-medium tabular-nums text-zinc-950 outline-none"
+                disabled={!pdf}
+                inputMode="numeric"
+                min="1"
+                max={pdf?.numPages}
+                pattern="[0-9]*"
+                type="number"
+                value={pageInput}
+                onBlur={goToPage}
+                onChange={(event) => setPageInput(event.target.value)}
+              />
+              <span className="text-xs text-zinc-400">/ {pdf?.numPages ?? 0}</span>
+            </form>
+
+            <button
+              type="button"
+              aria-label={t.undo}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-700 disabled:text-zinc-300"
+              disabled={!pageStrokes.length && !pageTexts.length}
+              onClick={undoPageStroke}
+            >
+              <Undo2 className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              aria-label={t.clearPage}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-700 disabled:text-zinc-300"
+              disabled={!pageStrokes.length && !pageTexts.length}
+              onClick={clearPage}
             >
               <Trash2 className="h-4 w-4" />
-              Delete local data
             </button>
-          </section>
-        </div>
-      ) : null}
+          </div>
+        </section>
 
-      {isTextDialogOpen ? (
-        <div className="fixed inset-0 z-40 flex items-end bg-black/30 p-3 sm:items-center sm:justify-center">
-          <section className="w-full rounded-lg bg-white p-4 shadow-2xl ring-1 ring-zinc-200 sm:max-w-sm">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-base font-semibold">Insert text</h2>
-              <button
-                type="button"
-                aria-label="Close text dialog"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-zinc-200 text-zinc-700"
-                onClick={() => setIsTextDialogOpen(false)}
-              >
-                <X className="h-4 w-4" />
-              </button>
+        {tool === 'draw' && showBrushSettings && (
+          <section className="border-b border-zinc-200 bg-white px-3 py-2">
+            <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-3">
+              <div className="flex items-center gap-1">
+                {PEN_COLORS.map((color) => (
+                  <button
+                    type="button"
+                    key={color}
+                    aria-label={`${t.useColor} ${color}`}
+                    className={`h-8 w-8 rounded-full border-2 ${penColor === color ? 'border-zinc-950' : 'border-zinc-200'}`}
+                    style={{ backgroundColor: color }}
+                    onClick={() => setPenColor(color)}
+                  />
+                ))}
+              </div>
+
+              <label className="flex min-w-32 flex-1 items-center gap-2 text-xs font-medium text-zinc-600">
+                <Brush className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <input
+                  aria-label={t.penSize}
+                  type="range"
+                  min="1"
+                  max="14"
+                  value={penWidth}
+                  className="w-full accent-zinc-950"
+                  onChange={(event) => setPenWidth(Number(event.target.value))}
+                />
+              </label>
+
+              <label className="flex min-w-32 flex-1 items-center gap-2 text-xs font-medium text-zinc-600">
+                <Eraser className="h-4 w-4 shrink-0 opacity-60" aria-hidden="true" />
+                <input
+                  aria-label={t.opacity}
+                  type="range"
+                  min="0.2"
+                  max="1"
+                  step="0.05"
+                  value={opacity}
+                  className="w-full accent-zinc-950"
+                  onChange={(event) => setOpacity(Number(event.target.value))}
+                />
+              </label>
             </div>
-
-            <textarea
-              autoFocus
-              className="mt-4 min-h-28 w-full resize-none rounded-md border border-zinc-200 p-3 text-base outline-none focus:border-zinc-950"
-              value={textDraft}
-              onChange={(event) => setTextDraft(event.target.value)}
-            />
-
-            <div className="mt-4 flex gap-2">
-              <button
-                type="button"
-                className="inline-flex h-11 flex-1 items-center justify-center rounded-md border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-700"
-                onClick={() => setIsTextDialogOpen(false)}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="inline-flex h-11 flex-1 items-center justify-center rounded-md bg-zinc-950 px-4 text-sm font-medium text-white"
-                onClick={armTextPlacement}
-              >
-                OK
-              </button>
-            </div>
           </section>
-        </div>
-      ) : null}
-    </main>
+        )}
+
+        <section className="relative flex flex-1 overflow-auto px-3 py-4">
+          {!pdf ? (
+            <div className="m-auto flex max-w-sm flex-col items-center gap-4 rounded-lg border border-dashed border-zinc-300 bg-white p-8 text-center shadow-sm">
+              <FileUp className="h-10 w-10 text-zinc-400" />
+              <label className="inline-flex cursor-pointer items-center justify-center rounded-md bg-zinc-950 px-4 py-2 text-sm font-medium text-white active:scale-95">
+                {t.addPdf}
+                <input
+                  className="sr-only"
+                  type="file"
+                  accept="application/pdf"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0]
+                    if (file) {
+                      void loadPdf(file)
+                    }
+                    event.currentTarget.value = ''
+                  }}
+                />
+              </label>
+            </div>
+          ) : (
+            <div className="mx-auto min-w-max pb-24">
+              <div
+                className="relative overflow-hidden rounded-md bg-white shadow-xl ring-1 ring-zinc-200"
+                style={{
+                  width: pageSize ? pageSize.width * zoom : undefined,
+                  height: pageSize ? pageSize.height * zoom : undefined,
+                }}
+              >
+                <canvas ref={pdfCanvasRef} className="absolute inset-0" />
+                <canvas
+                  ref={inkCanvasRef}
+                  className={`absolute inset-0 ${tool === 'draw' ? 'cursor-crosshair' : 'pointer-events-none'}`}
+                  style={{ touchAction: tool === 'draw' ? 'none' : 'auto' }}
+                  onPointerDown={handlePointerDown}
+                  onPointerMove={handlePointerMove}
+                  onPointerUp={finishStroke}
+                  onPointerCancel={finishStroke}
+                />
+                {isLoading ? (
+                  <div className="absolute inset-0 grid place-items-center bg-white/70 text-sm font-medium text-zinc-600">
+                    {t.loading}
+                  </div>
+                ) : null}
+                {pendingText ? (
+                  <div className="pointer-events-none absolute left-2 top-2 rounded bg-zinc-950/80 px-2 py-1 text-xs font-medium text-white">
+                    {t.tapToPlace}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          )}
+
+          {error ? (
+            <div className="fixed inset-x-3 bottom-3 z-30 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 shadow-lg">
+              {error}
+            </div>
+          ) : null}
+        </section>
+        {isSettingsOpen ? (
+          <div className="fixed inset-0 z-40 flex items-end bg-black/30 p-3 sm:items-center sm:justify-center">
+            <section className="w-full rounded-lg bg-white p-4 shadow-2xl ring-1 ring-zinc-200 sm:max-w-sm flex flex-col max-h-[85vh]">
+              <div className="flex items-center justify-between gap-3 shrink-0 pb-3 border-b border-zinc-100">
+                <h2 className="text-base font-semibold">{t.settings}</h2>
+                <button
+                  type="button"
+                  aria-label={t.settings}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-zinc-200 text-zinc-700 hover:bg-zinc-50 active:scale-95 transition-all"
+                  onClick={() => setIsSettingsOpen(false)}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="mt-4 overflow-y-auto flex-1 pr-1 space-y-3">
+                <div className="rounded-md border border-zinc-200 bg-zinc-50 p-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">{t.localData}</p>
+                  <p className="mt-1 text-2xl font-semibold tabular-nums text-zinc-950">
+                    {localDataSize === null ? '...' : formatBytes(localDataSize)}
+                  </p>
+                </div>
+
+                <label className="flex items-center justify-between gap-3 rounded-md border border-zinc-200 bg-white p-3 cursor-pointer hover:bg-zinc-50 transition-colors">
+                  <span className="text-sm font-medium text-zinc-800">{t.painting}</span>
+                  <input
+                    checked={isPaintingEnabled}
+                    className="h-5 w-5 accent-zinc-950"
+                    type="checkbox"
+                    onChange={(event) => {
+                      if (!event.target.checked) {
+                        cancelActiveStroke()
+                      }
+                      setIsPaintingEnabled(event.target.checked)
+                    }}
+                  />
+                </label>
+
+                {pdf ? (
+                  <button
+                    type="button"
+                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-700 hover:bg-zinc-50 active:scale-95 transition-all"
+                    onClick={() => {
+                      const shouldClose = window.confirm(t.confirmClosePdf)
+                      if (shouldClose) {
+                        closeActiveDocument()
+                        setIsSettingsOpen(false)
+                      }
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                    {t.closePdf}
+                  </button>
+                ) : null}
+
+                <button
+                  type="button"
+                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-red-600 px-4 text-sm font-medium text-white disabled:bg-zinc-300 hover:bg-red-700 active:scale-95 transition-all"
+                  disabled={!localDataSize}
+                  onClick={() => void deleteLocalData()}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  {t.deleteLocalData}
+                </button>
+
+                <hr className="my-2 border-zinc-100" />
+
+                <details className="rounded-md border border-zinc-200 bg-zinc-50/50 p-3 select-none group">
+                  <summary className="flex cursor-pointer items-center justify-between text-sm font-medium text-zinc-800 focus:outline-none">
+                    <span>{t.aboutTitle}</span>
+                    <ChevronRight className="h-4 w-4 text-zinc-400 transition-transform group-open:rotate-90" />
+                  </summary>
+                  <div className="mt-3 text-xs text-zinc-600 space-y-2 border-t border-zinc-200/60 pt-3 select-text leading-relaxed">
+                    <p>{t.aboutDesc}</p>
+                    <p className="font-semibold text-zinc-700 mt-2">{t.featuresTitle}:</p>
+                    <ul className="list-disc pl-4 space-y-1">
+                      <li>{t.featureDraw}</li>
+                      <li>{t.featureText}</li>
+                      <li>{t.featureLocal}</li>
+                    </ul>
+                    <p className="rounded bg-zinc-100 p-2 text-[10px] text-zinc-500 font-medium leading-relaxed mt-2">
+                      {t.privacyNote}
+                    </p>
+                  </div>
+                </details>
+
+                <div className="rounded-md border border-zinc-200 bg-rose-50/30 p-3 text-center">
+                  <p className="text-xs font-semibold text-zinc-800">{t.donateTitle}</p>
+                  <p className="mt-1 text-[11px] text-zinc-500 leading-normal">{t.donateDesc}</p>
+                  <a
+                    href={DONATE_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2.5 inline-flex h-9 w-full items-center justify-center gap-2 rounded-md bg-rose-50 px-3 text-xs font-bold text-rose-600 border border-rose-100 hover:bg-rose-100 active:scale-95 transition-all"
+                  >
+                    <Heart className="h-3.5 w-3.5 fill-rose-500 text-rose-500" />
+                    <span>{t.donateBtn}</span>
+                  </a>
+                </div>
+              </div>
+            </section>
+          </div>
+        ) : null}
+
+        {isTextDialogOpen ? (
+          <div className="fixed inset-0 z-40 flex items-end bg-black/30 p-3 sm:items-center sm:justify-center">
+            <section className="w-full rounded-lg bg-white p-4 shadow-2xl ring-1 ring-zinc-200 sm:max-w-sm">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-base font-semibold">{t.insertText}</h2>
+                <button
+                  type="button"
+                  aria-label={t.insertText}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-zinc-200 text-zinc-700"
+                  onClick={() => setIsTextDialogOpen(false)}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <textarea
+                autoFocus
+                className="mt-4 min-h-28 w-full resize-none rounded-md border border-zinc-200 p-3 text-base outline-none focus:border-zinc-950"
+                value={textDraft}
+                onChange={(event) => setTextDraft(event.target.value)}
+              />
+
+              <div className="mt-4 flex gap-2">
+                <button
+                  type="button"
+                  className="inline-flex h-11 flex-1 items-center justify-center rounded-md border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-700"
+                  onClick={() => setIsTextDialogOpen(false)}
+                >
+                  {t.cancel}
+                </button>
+                <button
+                  type="button"
+                  className="inline-flex h-11 flex-1 items-center justify-center rounded-md bg-zinc-950 px-4 text-sm font-medium text-white"
+                  onClick={armTextPlacement}
+                >
+                  {t.ok}
+                </button>
+              </div>
+            </section>
+          </div>
+        ) : null}
+      </main>
+    </div>
   )
 }
 
@@ -1147,44 +1507,163 @@ function measureTextLine(text: string, size: number) {
 
 function openPdfStore() {
   return new Promise<IDBDatabase>((resolve, reject) => {
-    const request = indexedDB.open(PDF_STORE_DB, 1)
+    const request = indexedDB.open(PDF_STORE_DB, 2)
 
     request.onupgradeneeded = () => {
-      request.result.createObjectStore(PDF_STORE_NAME)
+      const db = request.result
+      if (!db.objectStoreNames.contains(PDF_STORE_NAME)) {
+        db.createObjectStore(PDF_STORE_NAME)
+      }
+      if (!db.objectStoreNames.contains('pdfs_metadata')) {
+        db.createObjectStore('pdfs_metadata')
+      }
     }
     request.onerror = () => reject(request.error ?? new Error('Could not open local PDF storage.'))
     request.onsuccess = () => resolve(request.result)
   })
 }
 
-async function readStoredPdf() {
+
+async function migrateDatabaseIfNeeded(): Promise<string | null> {
+  if (!('indexedDB' in window)) {
+    return null
+  }
   const database = await openPdfStore()
 
-  return new Promise<StoredPdf | null>((resolve, reject) => {
+  const lastOpened = await new Promise<any>((resolve) => {
+    try {
+      const transaction = database.transaction(PDF_STORE_NAME, 'readonly')
+      const store = transaction.objectStore(PDF_STORE_NAME)
+      const request = store.get(LAST_PDF_KEY)
+      request.onsuccess = () => resolve(request.result)
+      request.onerror = () => resolve(null)
+    } catch {
+      resolve(null)
+    }
+  })
+
+  if (!lastOpened) {
+    database.close()
+    return null
+  }
+
+  const newId = crypto.randomUUID()
+  const now = Date.now()
+
+  const data = lastOpened.data as ArrayBuffer
+  const metadata: PdfMetadata = {
+    id: newId,
+    name: lastOpened.name || 'Migrated PDF',
+    opacity: lastOpened.opacity ?? 0.65,
+    paintingEnabled: lastOpened.paintingEnabled ?? true,
+    pageNumber: lastOpened.pageNumber ?? 1,
+    penColor: lastOpened.penColor ?? PEN_COLORS[0],
+    penWidth: lastOpened.penWidth ?? 4,
+    strokes: lastOpened.strokes ?? [],
+    texts: lastOpened.texts ?? [],
+    zoom: lastOpened.zoom ?? 1,
+    updatedAt: now,
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    const transaction = database.transaction([PDF_STORE_NAME, 'pdfs_metadata'], 'readwrite')
+    const pdfsStore = transaction.objectStore(PDF_STORE_NAME)
+    const metaStore = transaction.objectStore('pdfs_metadata')
+
+    pdfsStore.put(data, newId)
+    metaStore.put(metadata, newId)
+    pdfsStore.delete(LAST_PDF_KEY)
+
+    transaction.oncomplete = () => resolve()
+    transaction.onerror = () => reject(transaction.error ?? new Error('Migration failed'))
+  })
+
+  database.close()
+  return newId
+}
+
+async function savePdfToLibrary(id: string, name: string, data: ArrayBuffer) {
+  if (!('indexedDB' in window)) {
+    return
+  }
+  const database = await openPdfStore()
+  const now = Date.now()
+  const metadata: PdfMetadata = {
+    id,
+    name,
+    opacity: 0.65,
+    paintingEnabled: true,
+    pageNumber: 1,
+    penColor: PEN_COLORS[0],
+    penWidth: 4,
+    strokes: [],
+    texts: [],
+    zoom: 1,
+    updatedAt: now,
+  }
+
+  return new Promise<void>((resolve, reject) => {
+    const transaction = database.transaction([PDF_STORE_NAME, 'pdfs_metadata'], 'readwrite')
+    const pdfsStore = transaction.objectStore(PDF_STORE_NAME)
+    const metaStore = transaction.objectStore('pdfs_metadata')
+
+    pdfsStore.put(data.slice(0), id)
+    metaStore.put(metadata, id)
+
+    transaction.oncomplete = () => {
+      database.close()
+      resolve()
+    }
+    transaction.onerror = () => {
+      database.close()
+      reject(transaction.error ?? new Error('Could not save PDF to library.'))
+    }
+  })
+}
+
+async function getPdfFile(id: string): Promise<ArrayBuffer> {
+  const database = await openPdfStore()
+  return new Promise<ArrayBuffer>((resolve, reject) => {
     const transaction = database.transaction(PDF_STORE_NAME, 'readonly')
     const store = transaction.objectStore(PDF_STORE_NAME)
-    const request = store.get(LAST_PDF_KEY)
+    const request = store.get(id)
 
-    request.onerror = () => reject(request.error ?? new Error('Could not read saved PDF.'))
-    request.onsuccess = () => resolve((request.result as StoredPdf | undefined) ?? null)
+    request.onerror = () => reject(request.error ?? new Error('Could not load PDF file.'))
+    request.onsuccess = () => {
+      if (!request.result) {
+        reject(new Error('PDF file not found in storage.'))
+      } else {
+        resolve(request.result as ArrayBuffer)
+      }
+    }
     transaction.oncomplete = () => database.close()
   })
 }
 
-async function saveStoredPdf(pdf: StoredPdf) {
+async function getPdfMetadata(id: string): Promise<PdfMetadata | null> {
+  const database = await openPdfStore()
+  return new Promise<PdfMetadata | null>((resolve, reject) => {
+    const transaction = database.transaction('pdfs_metadata', 'readonly')
+    const store = transaction.objectStore('pdfs_metadata')
+    const request = store.get(id)
+
+    request.onerror = () => reject(request.error ?? new Error('Could not load PDF metadata.'))
+    request.onsuccess = () => resolve((request.result as PdfMetadata | undefined) ?? null)
+    transaction.oncomplete = () => database.close()
+  })
+}
+
+async function savePdfMetadata(metadata: PdfMetadata): Promise<void> {
   if (!('indexedDB' in window)) {
     return
   }
-
   const database = await openPdfStore()
-
   return new Promise<void>((resolve, reject) => {
-    const transaction = database.transaction(PDF_STORE_NAME, 'readwrite')
-    const store = transaction.objectStore(PDF_STORE_NAME)
-    const request = store.put(pdf, LAST_PDF_KEY)
+    const transaction = database.transaction('pdfs_metadata', 'readwrite')
+    const store = transaction.objectStore('pdfs_metadata')
+    const request = store.put(metadata, metadata.id)
 
-    request.onerror = () => reject(request.error ?? new Error('Could not save PDF locally.'))
-    transaction.onerror = () => reject(transaction.error ?? new Error('Could not save PDF locally.'))
+    request.onerror = () => reject(request.error ?? new Error('Could not save PDF metadata.'))
     transaction.oncomplete = () => {
       database.close()
       resolve()
@@ -1192,68 +1671,111 @@ async function saveStoredPdf(pdf: StoredPdf) {
   })
 }
 
-async function mergeStoredPdf(pdfState: Omit<StoredPdf, 'data' | 'name'>) {
+async function mergePdfMetadata(id: string, updates: Partial<Omit<PdfMetadata, 'id' | 'name'>>) {
   if (!('indexedDB' in window)) {
     return
   }
-
-  const storedPdf = await readStoredPdf()
-  if (!storedPdf) {
+  const metadata = await getPdfMetadata(id)
+  if (!metadata) {
     return
   }
+  const updatedMetadata: PdfMetadata = {
+    ...metadata,
+    ...updates,
+    updatedAt: Date.now(),
+  }
+  await savePdfMetadata(updatedMetadata)
+}
 
-  await saveStoredPdf({
-    ...storedPdf,
-    ...pdfState,
+async function getAllPdfMetadata(): Promise<PdfMetadata[]> {
+  if (!('indexedDB' in window)) {
+    return []
+  }
+  const database = await openPdfStore()
+  return new Promise<PdfMetadata[]>((resolve, reject) => {
+    const transaction = database.transaction('pdfs_metadata', 'readonly')
+    const store = transaction.objectStore('pdfs_metadata')
+    const request = store.getAll()
+
+    request.onerror = () => reject(request.error ?? new Error('Could not load PDF metadata list.'))
+    request.onsuccess = () => {
+      const list = (request.result as PdfMetadata[] ?? [])
+      list.sort((a, b) => b.updatedAt - a.updatedAt)
+      resolve(list)
+    }
+    transaction.oncomplete = () => database.close()
   })
 }
 
-async function clearStoredPdf() {
+async function deletePdfFromLibrary(id: string): Promise<void> {
   if (!('indexedDB' in window)) {
     return
   }
-
   const database = await openPdfStore()
-
   return new Promise<void>((resolve, reject) => {
-    const transaction = database.transaction(PDF_STORE_NAME, 'readwrite')
-    const store = transaction.objectStore(PDF_STORE_NAME)
-    const request = store.delete(LAST_PDF_KEY)
+    const transaction = database.transaction([PDF_STORE_NAME, 'pdfs_metadata'], 'readwrite')
+    const pdfsStore = transaction.objectStore(PDF_STORE_NAME)
+    const metaStore = transaction.objectStore('pdfs_metadata')
 
-    request.onerror = () => reject(request.error ?? new Error('Could not clear saved PDF.'))
-    transaction.onerror = () => reject(transaction.error ?? new Error('Could not clear saved PDF.'))
+    pdfsStore.delete(id)
+    metaStore.delete(id)
+
     transaction.oncomplete = () => {
       database.close()
       resolve()
     }
+    transaction.onerror = () => {
+      database.close()
+      reject(transaction.error ?? new Error('Could not delete PDF from storage.'))
+    }
   })
 }
 
-async function getStoredPdfSize() {
+async function getLibraryTotalSize(): Promise<number> {
   if (!('indexedDB' in window)) {
     return 0
   }
+  const database = await openPdfStore()
+  const metadataList = await getAllPdfMetadata()
+  const metadataSize = new Blob([JSON.stringify(metadataList)]).size
 
-  const storedPdf = await readStoredPdf()
-  if (!storedPdf) {
-    return 0
+  return new Promise<number>((resolve, reject) => {
+    const transaction = database.transaction(PDF_STORE_NAME, 'readonly')
+    const store = transaction.objectStore(PDF_STORE_NAME)
+    const request = store.getAll()
+
+    request.onerror = () => reject(request.error ?? new Error('Could not calculate storage size.'))
+    request.onsuccess = () => {
+      const files = request.result as ArrayBuffer[]
+      const filesSize = files.reduce((acc, file) => acc + (file?.byteLength ?? 0), 0)
+      resolve(filesSize + metadataSize)
+    }
+    transaction.oncomplete = () => database.close()
+  })
+}
+
+async function clearAllLocalData(): Promise<void> {
+  if (!('indexedDB' in window)) {
+    return
   }
+  const database = await openPdfStore()
+  return new Promise<void>((resolve, reject) => {
+    const transaction = database.transaction([PDF_STORE_NAME, 'pdfs_metadata'], 'readwrite')
+    const pdfsStore = transaction.objectStore(PDF_STORE_NAME)
+    const metaStore = transaction.objectStore('pdfs_metadata')
 
-  const metadataSize = new Blob([
-    JSON.stringify({
-      name: storedPdf.name,
-      opacity: storedPdf.opacity,
-      paintingEnabled: storedPdf.paintingEnabled,
-      pageNumber: storedPdf.pageNumber,
-      penColor: storedPdf.penColor,
-      penWidth: storedPdf.penWidth,
-      strokes: storedPdf.strokes ?? [],
-      texts: storedPdf.texts ?? [],
-      zoom: storedPdf.zoom,
-    }),
-  ]).size
+    pdfsStore.clear()
+    metaStore.clear()
 
-  return storedPdf.data.byteLength + metadataSize
+    transaction.oncomplete = () => {
+      database.close()
+      resolve()
+    }
+    transaction.onerror = () => {
+      database.close()
+      reject(transaction.error ?? new Error('Could not clear database.'))
+    }
+  })
 }
 
 export default App
