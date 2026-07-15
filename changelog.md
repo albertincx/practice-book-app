@@ -18,3 +18,4 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - **Lint Command Target**: Corrected the `lint` script command in `package.json` to run only on the `src` directory (`oxlint src`).
+- **Vite Upgrade for Cloudflare Pages**: Upgraded Vite to version `^6.0.0` to satisfy Wrangler/Cloudflare Pages deployment requirements.
