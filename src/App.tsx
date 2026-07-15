@@ -66,10 +66,18 @@ type PinchState = {
   zoom: number
 }
 
+type TextDragState = {
+  offsetX: number
+  offsetY: number
+  pointerId: number
+  textId: string
+}
+
 type StoredPdf = {
   data: ArrayBuffer
   name: string
   opacity?: number
+  paintingEnabled?: boolean
   pageNumber?: number
   penColor?: string
   penWidth?: number
@@ -113,6 +121,7 @@ function App() {
   const activeStrokePointerRef = useRef<number | null>(null)
   const pointersRef = useRef<Map<number, PointerPosition>>(new Map())
   const pinchStateRef = useRef<PinchState | null>(null)
+  const textDragRef = useRef<TextDragState | null>(null)
   const hasOpenedPdfRef = useRef(false)
 
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null)
@@ -129,6 +138,7 @@ function App() {
   const [penColor, setPenColor] = useState(PEN_COLORS[0])
   const [penWidth, setPenWidth] = useState(4)
   const [opacity, setOpacity] = useState(0.65)
+  const [isPaintingEnabled, setIsPaintingEnabled] = useState(true)
   const [isLoading, setIsLoading] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isTextDialogOpen, setIsTextDialogOpen] = useState(false)
@@ -179,6 +189,9 @@ function App() {
         if (storedPdf.opacity !== undefined) {
           setOpacity(storedPdf.opacity)
         }
+        if (storedPdf.paintingEnabled !== undefined) {
+          setIsPaintingEnabled(storedPdf.paintingEnabled)
+        }
       } catch (restoreError) {
         if (!isCancelled) {
           setError(restoreError instanceof Error ? restoreError.message : 'Could not restore the saved PDF.')
@@ -202,6 +215,7 @@ function App() {
     const saveTimer = window.setTimeout(() => {
       void mergeStoredPdf({
         opacity,
+        paintingEnabled: isPaintingEnabled,
         pageNumber,
         penColor,
         penWidth,
@@ -212,7 +226,7 @@ function App() {
     }, 250)
 
     return () => window.clearTimeout(saveTimer)
-  }, [opacity, pageNumber, pdf, penColor, penWidth, strokes, texts, zoom])
+  }, [isPaintingEnabled, opacity, pageNumber, pdf, penColor, penWidth, strokes, texts, zoom])
 
   useEffect(() => {
     if (!isSettingsOpen) {
@@ -333,6 +347,7 @@ function App() {
     cancelActiveStroke()
     pointersRef.current.clear()
     pinchStateRef.current = null
+    textDragRef.current = null
 
     try {
       const nextPdf = await pdfjsLib.getDocument({
@@ -358,6 +373,7 @@ function App() {
           data,
           name,
           opacity,
+          paintingEnabled: isPaintingEnabled,
           pageNumber: 1,
           penColor,
           penWidth,
@@ -452,6 +468,21 @@ function App() {
       return
     }
 
+    const touchedText = findTextAtPoint(pageTexts, point)
+    if (touchedText) {
+      textDragRef.current = {
+        offsetX: point.x - touchedText.x,
+        offsetY: point.y - touchedText.y,
+        pointerId: event.pointerId,
+        textId: touchedText.id,
+      }
+      return
+    }
+
+    if (!isPaintingEnabled) {
+      return
+    }
+
     const stroke: Stroke = {
       createdAt: Date.now(),
       id: crypto.randomUUID(),
@@ -473,8 +504,26 @@ function App() {
     }
 
     if (pointersRef.current.size >= 2) {
+      textDragRef.current = null
       cancelActiveStroke()
       updatePinchState()
+      return
+    }
+
+    const textDrag = textDragRef.current
+    if (textDrag?.pointerId === event.pointerId) {
+      const point = getInkPoint(event)
+      if (!point) {
+        return
+      }
+
+      setTexts((current) =>
+        current.map((text) =>
+          text.id === textDrag.textId
+            ? { ...text, x: point.x - textDrag.offsetX, y: point.y - textDrag.offsetY }
+            : text,
+        ),
+      )
       return
     }
 
@@ -504,6 +553,10 @@ function App() {
     if (activeStrokePointerRef.current === event.pointerId) {
       activeStrokeRef.current = null
       activeStrokePointerRef.current = null
+    }
+
+    if (textDragRef.current?.pointerId === event.pointerId) {
+      textDragRef.current = null
     }
 
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
@@ -538,6 +591,7 @@ function App() {
     cancelActiveStroke()
     pointersRef.current.clear()
     pinchStateRef.current = null
+    textDragRef.current = null
     setPdf(null)
     setPdfName('')
     setPageNumber(1)
@@ -591,6 +645,7 @@ function App() {
     cancelActiveStroke()
     pointersRef.current.clear()
     pinchStateRef.current = null
+    textDragRef.current = null
     setTool(nextTool)
   }
 
@@ -940,6 +995,21 @@ function App() {
               </p>
             </div>
 
+            <label className="mt-3 flex items-center justify-between gap-3 rounded-md border border-zinc-200 bg-white p-3">
+              <span className="text-sm font-medium text-zinc-800">Painting</span>
+              <input
+                checked={isPaintingEnabled}
+                className="h-5 w-5 accent-zinc-950"
+                type="checkbox"
+                onChange={(event) => {
+                  if (!event.target.checked) {
+                    cancelActiveStroke()
+                  }
+                  setIsPaintingEnabled(event.target.checked)
+                }}
+              />
+            </label>
+
             <button
               type="button"
               className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-red-600 px-4 text-sm font-medium text-white disabled:bg-zinc-300"
@@ -1036,6 +1106,43 @@ function drawTextAnnotation(context: CanvasRenderingContext2D, text: TextAnnotat
   })
 
   context.restore()
+}
+
+function findTextAtPoint(texts: TextAnnotation[], point: StrokePoint) {
+  return [...texts].reverse().find((text) => {
+    const bounds = getTextBounds(text)
+    return (
+      point.x >= bounds.x &&
+      point.x <= bounds.x + bounds.width &&
+      point.y >= bounds.y &&
+      point.y <= bounds.y + bounds.height
+    )
+  })
+}
+
+function getTextBounds(text: TextAnnotation) {
+  const lines = text.text.split('\n')
+  const padding = Math.max(8, text.size * 0.35)
+  const width = Math.max(...lines.map((line) => measureTextLine(line, text.size)), text.size)
+  const height = lines.length * text.size * 1.25
+
+  return {
+    height: height + padding * 2,
+    width: width + padding * 2,
+    x: text.x - padding,
+    y: text.y - padding,
+  }
+}
+
+function measureTextLine(text: string, size: number) {
+  const canvas = document.createElement('canvas')
+  const context = canvas.getContext('2d')
+  if (!context) {
+    return text.length * size * 0.55
+  }
+
+  context.font = `${size}px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`
+  return context.measureText(text).width
 }
 
 function openPdfStore() {
@@ -1136,6 +1243,7 @@ async function getStoredPdfSize() {
     JSON.stringify({
       name: storedPdf.name,
       opacity: storedPdf.opacity,
+      paintingEnabled: storedPdf.paintingEnabled,
       pageNumber: storedPdf.pageNumber,
       penColor: storedPdf.penColor,
       penWidth: storedPdf.penWidth,
