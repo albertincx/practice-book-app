@@ -39,6 +39,16 @@ type PageSize = {
   height: number
 }
 
+type PointerPosition = {
+  x: number
+  y: number
+}
+
+type PinchState = {
+  distance: number
+  zoom: number
+}
+
 const MIN_ZOOM = 0.5
 const MAX_ZOOM = 3
 const ZOOM_STEP = 0.25
@@ -56,6 +66,9 @@ function App() {
   const pdfCanvasRef = useRef<HTMLCanvasElement | null>(null)
   const inkCanvasRef = useRef<HTMLCanvasElement | null>(null)
   const activeStrokeRef = useRef<Stroke | null>(null)
+  const activeStrokePointerRef = useRef<number | null>(null)
+  const pointersRef = useRef<Map<number, PointerPosition>>(new Map())
+  const pinchStateRef = useRef<PinchState | null>(null)
 
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null)
   const [pdfName, setPdfName] = useState('')
@@ -169,10 +182,21 @@ function App() {
   const loadPdf = async (file: File) => {
     setIsLoading(true)
     setError('')
+    cancelActiveStroke()
+    pointersRef.current.clear()
+    pinchStateRef.current = null
 
     try {
       const data = await file.arrayBuffer()
-      const nextPdf = await pdfjsLib.getDocument({ data }).promise
+      const nextPdf = await pdfjsLib.getDocument({
+        data,
+        canvasMaxAreaInBytes: -1,
+        isImageDecoderSupported: false,
+        isOffscreenCanvasSupported: false,
+        maxImageSize: -1,
+        useWorkerFetch: true,
+        wasmUrl: '/pdfjs/wasm/',
+      }).promise
       setPdf(nextPdf)
       setPdfName(file.name)
       setPageNumber(1)
@@ -187,6 +211,39 @@ function App() {
 
   const updateZoom = (nextZoom: number) => {
     setZoom(clamp(Number(nextZoom.toFixed(2)), MIN_ZOOM, MAX_ZOOM))
+  }
+
+  const cancelActiveStroke = () => {
+    const activeStroke = activeStrokeRef.current
+    if (!activeStroke) {
+      return
+    }
+
+    setStrokes((current) => current.filter((stroke) => stroke.id !== activeStroke.id))
+    activeStrokeRef.current = null
+    activeStrokePointerRef.current = null
+  }
+
+  const updatePinchState = () => {
+    const positions = [...pointersRef.current.values()]
+    if (positions.length < 2) {
+      pinchStateRef.current = null
+      return
+    }
+
+    const [firstPointer, secondPointer] = positions
+    const distance = Math.hypot(secondPointer.x - firstPointer.x, secondPointer.y - firstPointer.y)
+    if (!distance) {
+      return
+    }
+
+    if (!pinchStateRef.current) {
+      pinchStateRef.current = { distance, zoom }
+      return
+    }
+
+    const nextZoom = pinchStateRef.current.zoom * (distance / pinchStateRef.current.distance)
+    updateZoom(nextZoom)
   }
 
   const getInkPoint = (event: PointerEvent<HTMLCanvasElement>): StrokePoint | null => {
@@ -207,12 +264,20 @@ function App() {
       return
     }
 
+    pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
+    event.currentTarget.setPointerCapture(event.pointerId)
+
+    if (pointersRef.current.size >= 2) {
+      cancelActiveStroke()
+      updatePinchState()
+      return
+    }
+
     const point = getInkPoint(event)
     if (!point) {
       return
     }
 
-    event.currentTarget.setPointerCapture(event.pointerId)
     const stroke: Stroke = {
       id: crypto.randomUUID(),
       page: pageNumber,
@@ -223,12 +288,23 @@ function App() {
     }
 
     activeStrokeRef.current = stroke
+    activeStrokePointerRef.current = event.pointerId
     setStrokes((current) => [...current, stroke])
   }
 
   const handlePointerMove = (event: PointerEvent<HTMLCanvasElement>) => {
+    if (pointersRef.current.has(event.pointerId)) {
+      pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
+    }
+
+    if (pointersRef.current.size >= 2) {
+      cancelActiveStroke()
+      updatePinchState()
+      return
+    }
+
     const activeStroke = activeStrokeRef.current
-    if (!activeStroke) {
+    if (!activeStroke || activeStrokePointerRef.current !== event.pointerId) {
       return
     }
 
@@ -244,7 +320,17 @@ function App() {
   }
 
   const finishStroke = (event: PointerEvent<HTMLCanvasElement>) => {
-    activeStrokeRef.current = null
+    pointersRef.current.delete(event.pointerId)
+
+    if (pointersRef.current.size < 2) {
+      pinchStateRef.current = null
+    }
+
+    if (activeStrokePointerRef.current === event.pointerId) {
+      activeStrokeRef.current = null
+      activeStrokePointerRef.current = null
+    }
+
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId)
     }
@@ -264,6 +350,9 @@ function App() {
   }
 
   const resetDocument = () => {
+    cancelActiveStroke()
+    pointersRef.current.clear()
+    pinchStateRef.current = null
     setPdf(null)
     setPdfName('')
     setPageNumber(1)
@@ -271,6 +360,13 @@ function App() {
     setStrokes([])
     setPageSize(null)
     setError('')
+  }
+
+  const changeTool = (nextTool: Tool) => {
+    cancelActiveStroke()
+    pointersRef.current.clear()
+    pinchStateRef.current = null
+    setTool(nextTool)
   }
 
   return (
@@ -320,7 +416,7 @@ function App() {
               type="button"
               aria-label="Draw mode"
               className={`inline-flex h-9 w-10 items-center justify-center rounded ${tool === 'draw' ? 'bg-white text-zinc-950 shadow-sm' : 'text-zinc-500'}`}
-              onClick={() => setTool('draw')}
+              onClick={() => changeTool('draw')}
             >
               <Brush className="h-4 w-4" />
             </button>
@@ -328,7 +424,7 @@ function App() {
               type="button"
               aria-label="Move mode"
               className={`inline-flex h-9 w-10 items-center justify-center rounded ${tool === 'move' ? 'bg-white text-zinc-950 shadow-sm' : 'text-zinc-500'}`}
-              onClick={() => setTool('move')}
+              onClick={() => changeTool('move')}
             >
               <Hand className="h-4 w-4" />
             </button>
