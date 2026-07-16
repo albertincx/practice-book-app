@@ -152,6 +152,9 @@ const TRANSLATIONS = {
     donateTitle: 'Support the project',
     donateBtn: 'Support with Donation',
     donateDesc: 'If PDF Learn was helpful to you, consider supporting the developer!',
+    headerPosition: 'Header Position',
+    headerTop: 'Show header at top',
+    headerBottom: 'Show header at bottom',
   },
   ru: {
     libraryTitle: 'Библиотека PDF',
@@ -201,6 +204,9 @@ const TRANSLATIONS = {
     donateTitle: 'Поддержать проект',
     donateBtn: 'Поддержать автора',
     donateDesc: 'Если PDF Learn оказался вам полезен, вы можете поддержать разработчика!',
+    headerPosition: 'Положение шапки',
+    headerTop: 'Показывать шапку вверху',
+    headerBottom: 'Показывать шапку внизу',
   }
 }
 
@@ -266,6 +272,15 @@ function App() {
   useEffect(() => {
     localStorage.setItem('pdf-lang', lang)
   }, [lang])
+
+  const [headerPosition, setHeaderPosition] = useState<'top' | 'bottom'>(() => {
+    const saved = localStorage.getItem('pdf-header-position')
+    return (saved === 'top' || saved === 'bottom') ? saved : 'top'
+  })
+
+  useEffect(() => {
+    localStorage.setItem('pdf-header-position', headerPosition)
+  }, [headerPosition])
 
   useEffect(() => {
     if (pdfName) {
@@ -904,8 +919,227 @@ function App() {
 
   const t = TRANSLATIONS[lang]
 
+  const renderHeader = (position: 'top' | 'bottom') => (
+    <header className={`sticky ${position === 'top' ? 'top-0 border-b shadow-sm' : 'bottom-0 border-t shadow-[0_-1px_3px_rgba(0,0,0,0.05)]'} z-20 border-zinc-200 bg-white/95 px-3 py-2 backdrop-blur shrink-0`}>
+      <div className="mx-auto flex max-w-5xl items-center gap-2">
+        <button
+          type="button"
+          aria-label={t.libraryTitle}
+          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 active:scale-95 transition-all"
+          onClick={() => setIsSidebarOpen((prev) => !prev)}
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium">{pdfName || t.emptyHeader}</p>
+          <p className="text-xs text-zinc-500">
+            {pdf ? `${t.savedLocally} - ${pdf.numPages} ${t.pages}` : t.selectOrUpload}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          className="inline-flex h-10 px-2.5 items-center justify-center rounded-md border border-zinc-200 bg-white text-xs font-bold text-zinc-700 hover:bg-zinc-50 active:scale-95 transition-all"
+          onClick={() => setLang((prev) => (prev === 'en' ? 'ru' : 'en'))}
+        >
+          {lang === 'en' ? 'EN' : 'RU'}
+        </button>
+
+        <button
+          type="button"
+          aria-label={t.settings}
+          className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 active:scale-95"
+          onClick={() => setIsSettingsOpen(true)}
+        >
+          <Settings className="h-5 w-5" />
+        </button>
+      </div>
+    </header>
+  )
+
+  const renderToolbar = () => (
+    <section className={`sec-1 sticky z-10 border-zinc-200 bg-white px-3 py-2 ${headerPosition === 'top' ? 'top-[57px] border-b shadow-sm' : 'bottom-[57px] border-t shadow-[0_-1px_3px_rgba(0,0,0,0.05)]'}`}>
+      <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-2">
+        <div className="flex rounded-md border border-zinc-200 bg-zinc-100 p-1 gap-0.5">
+          <button
+            type="button"
+            aria-label={t.drawMode}
+            className={`inline-flex h-9 w-10 items-center justify-center rounded ${tool === 'draw' ? 'bg-white text-zinc-950 shadow-sm' : 'text-zinc-500'}`}
+            onClick={() => changeTool('draw')}
+          >
+            <Brush className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            aria-label={t.moveMode}
+            className={`inline-flex h-9 w-10 items-center justify-center rounded ${tool === 'move' ? 'bg-white text-zinc-950 shadow-sm' : 'text-zinc-500'}`}
+            onClick={() => changeTool('move')}
+          >
+            <Hand className="h-4 w-4" />
+          </button>
+          {tool === 'draw' && (
+            <button
+              type="button"
+              aria-label={t.toggleBrushSettings}
+              className={`inline-flex h-9 w-10 items-center justify-center rounded transition-colors ${showBrushSettings ? 'bg-zinc-200 text-zinc-950 hover:bg-zinc-300' : 'text-zinc-400 hover:text-zinc-600 hover:bg-zinc-200/50'}`}
+              onClick={() => setShowBrushSettings((prev) => !prev)}
+            >
+              <Sliders className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        <button
+          type="button"
+          aria-label={t.insertText}
+          className={`inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-700 disabled:text-zinc-300 ${pendingText ? 'ring-2 ring-zinc-950' : ''}`}
+          disabled={!pdf}
+          onClick={openTextDialog}
+        >
+          <Type className="h-4 w-4" />
+        </button>
+
+        <div className="flex items-center rounded-md border border-zinc-200 bg-white">
+          <button
+            type="button"
+            aria-label={t.zoomOut}
+            className="inline-flex h-10 w-10 items-center justify-center text-zinc-700 disabled:text-zinc-300"
+            disabled={!pdf || zoom <= MIN_ZOOM}
+            onClick={() => updateZoom(zoom - ZOOM_STEP)}
+          >
+            <Minus className="h-4 w-4" />
+          </button>
+          <span className="w-14 text-center text-sm font-medium tabular-nums">{formatZoom(zoom)}</span>
+          <button
+            type="button"
+            aria-label={t.zoomIn}
+            className="inline-flex h-10 w-10 items-center justify-center text-zinc-700 disabled:text-zinc-300"
+            disabled={!pdf || zoom >= MAX_ZOOM}
+            onClick={() => updateZoom(zoom + ZOOM_STEP)}
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="flex items-center rounded-md border border-zinc-200 bg-white">
+          <button
+            type="button"
+            aria-label={t.prevPage}
+            className="inline-flex h-10 w-10 items-center justify-center text-zinc-700 disabled:text-zinc-300"
+            disabled={!pdf || pageNumber <= 1}
+            onClick={() => setPageNumber((current) => current - 1)}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            aria-label={t.nextPage}
+            className="inline-flex h-10 w-10 items-center justify-center text-zinc-700 disabled:text-zinc-300"
+            disabled={!pdf || pageNumber >= pdf.numPages}
+            onClick={() => setPageNumber((current) => current + 1)}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+
+        <form
+          className="flex h-10 items-center gap-1 rounded-md border border-zinc-200 bg-white px-2"
+          onSubmit={(event) => {
+            event.preventDefault()
+            goToPage()
+          }}
+        >
+          <Hash className="h-4 w-4 text-zinc-500" />
+          <input
+            aria-label={t.goToPage}
+            className="h-8 w-14 bg-transparent text-center text-sm font-medium tabular-nums text-zinc-950 outline-none"
+            disabled={!pdf}
+            inputMode="numeric"
+            min="1"
+            max={pdf?.numPages}
+            pattern="[0-9]*"
+            type="number"
+            value={pageInput}
+            onBlur={goToPage}
+            onChange={(event) => setPageInput(event.target.value)}
+          />
+          <span className="text-xs text-zinc-400">/ {pdf?.numPages ?? 0}</span>
+        </form>
+
+        <button
+          type="button"
+          aria-label={t.undo}
+          className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-700 disabled:text-zinc-300"
+          disabled={!pageStrokes.length && !pageTexts.length}
+          onClick={undoPageStroke}
+        >
+          <Undo2 className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          aria-label={t.clearPage}
+          className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-700 disabled:text-zinc-300"
+          disabled={!pageStrokes.length && !pageTexts.length}
+          onClick={clearPage}
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
+    </section>
+  )
+
+  const renderBrushSettings = () => {
+    if (tool !== 'draw' || !showBrushSettings) return null
+    return (
+      <section className={`border-zinc-200 bg-white px-3 py-2 ${headerPosition === 'top' ? 'border-b shadow-sm' : 'border-t shadow-[0_-1px_3px_rgba(0,0,0,0.05)]'}`}>
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-3">
+          <div className="flex items-center gap-1">
+            {PEN_COLORS.map((color) => (
+              <button
+                type="button"
+                key={color}
+                aria-label={`${t.useColor} ${color}`}
+                className={`h-8 w-8 rounded-full border-2 ${penColor === color ? 'border-zinc-950' : 'border-zinc-200'}`}
+                style={{ backgroundColor: color }}
+                onClick={() => setPenColor(color)}
+              />
+            ))}
+          </div>
+
+          <label className="flex min-w-32 flex-1 items-center gap-2 text-xs font-medium text-zinc-600">
+            <Brush className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <input
+              aria-label={t.penSize}
+              type="range"
+              min="1"
+              max="14"
+              value={penWidth}
+              className="w-full accent-zinc-950"
+              onChange={(event) => setPenWidth(Number(event.target.value))}
+            />
+          </label>
+
+          <label className="flex min-w-32 flex-1 items-center gap-2 text-xs font-medium text-zinc-600">
+            <Eraser className="h-4 w-4 shrink-0 opacity-60" aria-hidden="true" />
+            <input
+              aria-label={t.opacity}
+              type="range"
+              min="0.2"
+              max="1"
+              step="0.05"
+              value={opacity}
+              className="w-full accent-zinc-950"
+              onChange={(event) => setOpacity(Number(event.target.value))}
+            />
+          </label>
+        </div>
+      </section>
+    )
+  }
+
   return (
-    <div className="flex min-h-svh bg-zinc-100 text-zinc-950 overflow-hidden relative">
+    <div className="flex h-svh bg-zinc-100 text-zinc-950 overflow-hidden relative">
       {/* Sidebar overlay backdrop for mobile */}
       {isSidebarOpen && (
         <div
@@ -1005,219 +1239,10 @@ function App() {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex flex-1 flex-col min-h-svh min-w-0 overflow-auto bg-zinc-100 text-zinc-950">
-        <header className="sticky top-0 z-20 border-b border-zinc-200 bg-white/95 px-3 py-2 shadow-sm backdrop-blur shrink-0">
-          <div className="mx-auto flex max-w-5xl items-center gap-2">
-            <button
-              type="button"
-              aria-label={t.libraryTitle}
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 active:scale-95 transition-all"
-              onClick={() => setIsSidebarOpen((prev) => !prev)}
-            >
-              <Menu className="h-5 w-5" />
-            </button>
-
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{pdfName || t.emptyHeader}</p>
-              <p className="text-xs text-zinc-500">
-                {pdf ? `${t.savedLocally} - ${pdf.numPages} ${t.pages}` : t.selectOrUpload}
-              </p>
-            </div>
-
-
-            <button
-              type="button"
-              className="inline-flex h-10 px-2.5 items-center justify-center rounded-md border border-zinc-200 bg-white text-xs font-bold text-zinc-700 hover:bg-zinc-50 active:scale-95 transition-all"
-              onClick={() => setLang((prev) => (prev === 'en' ? 'ru' : 'en'))}
-            >
-              {lang === 'en' ? 'EN' : 'RU'}
-            </button>
-
-            <button
-              type="button"
-              aria-label={t.settings}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 active:scale-95"
-              onClick={() => setIsSettingsOpen(true)}
-            >
-              <Settings className="h-5 w-5" />
-            </button>
-          </div>
-        </header>
-
-        <section className="sticky top-[57px] z-10 border-b border-zinc-200 bg-white px-3 py-2">
-          <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-2">
-            <div className="flex rounded-md border border-zinc-200 bg-zinc-100 p-1 gap-0.5">
-              <button
-                type="button"
-                aria-label={t.drawMode}
-                className={`inline-flex h-9 w-10 items-center justify-center rounded ${tool === 'draw' ? 'bg-white text-zinc-950 shadow-sm' : 'text-zinc-500'}`}
-                onClick={() => changeTool('draw')}
-              >
-                <Brush className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                aria-label={t.moveMode}
-                className={`inline-flex h-9 w-10 items-center justify-center rounded ${tool === 'move' ? 'bg-white text-zinc-950 shadow-sm' : 'text-zinc-500'}`}
-                onClick={() => changeTool('move')}
-              >
-                <Hand className="h-4 w-4" />
-              </button>
-              {tool === 'draw' && (
-                <button
-                  type="button"
-                  aria-label={t.toggleBrushSettings}
-                  className={`inline-flex h-9 w-10 items-center justify-center rounded transition-colors ${showBrushSettings ? 'bg-zinc-200 text-zinc-950 hover:bg-zinc-300' : 'text-zinc-400 hover:text-zinc-600 hover:bg-zinc-200/50'}`}
-                  onClick={() => setShowBrushSettings((prev) => !prev)}
-                >
-                  <Sliders className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-
-            <button
-              type="button"
-              aria-label={t.insertText}
-              className={`inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-700 disabled:text-zinc-300 ${pendingText ? 'ring-2 ring-zinc-950' : ''}`}
-              disabled={!pdf}
-              onClick={openTextDialog}
-            >
-              <Type className="h-4 w-4" />
-            </button>
-
-            <div className="flex items-center rounded-md border border-zinc-200 bg-white">
-              <button
-                type="button"
-                aria-label={t.zoomOut}
-                className="inline-flex h-10 w-10 items-center justify-center text-zinc-700 disabled:text-zinc-300"
-                disabled={!pdf || zoom <= MIN_ZOOM}
-                onClick={() => updateZoom(zoom - ZOOM_STEP)}
-              >
-                <Minus className="h-4 w-4" />
-              </button>
-              <span className="w-14 text-center text-sm font-medium tabular-nums">{formatZoom(zoom)}</span>
-              <button
-                type="button"
-                aria-label={t.zoomIn}
-                className="inline-flex h-10 w-10 items-center justify-center text-zinc-700 disabled:text-zinc-300"
-                disabled={!pdf || zoom >= MAX_ZOOM}
-                onClick={() => updateZoom(zoom + ZOOM_STEP)}
-              >
-                <Plus className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="flex items-center rounded-md border border-zinc-200 bg-white">
-              <button
-                type="button"
-                aria-label={t.prevPage}
-                className="inline-flex h-10 w-10 items-center justify-center text-zinc-700 disabled:text-zinc-300"
-                disabled={!pdf || pageNumber <= 1}
-                onClick={() => setPageNumber((current) => current - 1)}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                aria-label={t.nextPage}
-                className="inline-flex h-10 w-10 items-center justify-center text-zinc-700 disabled:text-zinc-300"
-                disabled={!pdf || pageNumber >= pdf.numPages}
-                onClick={() => setPageNumber((current) => current + 1)}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-
-            <form
-              className="flex h-10 items-center gap-1 rounded-md border border-zinc-200 bg-white px-2"
-              onSubmit={(event) => {
-                event.preventDefault()
-                goToPage()
-              }}
-            >
-              <Hash className="h-4 w-4 text-zinc-500" />
-              <input
-                aria-label={t.goToPage}
-                className="h-8 w-14 bg-transparent text-center text-sm font-medium tabular-nums text-zinc-950 outline-none"
-                disabled={!pdf}
-                inputMode="numeric"
-                min="1"
-                max={pdf?.numPages}
-                pattern="[0-9]*"
-                type="number"
-                value={pageInput}
-                onBlur={goToPage}
-                onChange={(event) => setPageInput(event.target.value)}
-              />
-              <span className="text-xs text-zinc-400">/ {pdf?.numPages ?? 0}</span>
-            </form>
-
-            <button
-              type="button"
-              aria-label={t.undo}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-700 disabled:text-zinc-300"
-              disabled={!pageStrokes.length && !pageTexts.length}
-              onClick={undoPageStroke}
-            >
-              <Undo2 className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              aria-label={t.clearPage}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-700 disabled:text-zinc-300"
-              disabled={!pageStrokes.length && !pageTexts.length}
-              onClick={clearPage}
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
-        </section>
-
-        {tool === 'draw' && showBrushSettings && (
-          <section className="border-b border-zinc-200 bg-white px-3 py-2">
-            <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-3">
-              <div className="flex items-center gap-1">
-                {PEN_COLORS.map((color) => (
-                  <button
-                    type="button"
-                    key={color}
-                    aria-label={`${t.useColor} ${color}`}
-                    className={`h-8 w-8 rounded-full border-2 ${penColor === color ? 'border-zinc-950' : 'border-zinc-200'}`}
-                    style={{ backgroundColor: color }}
-                    onClick={() => setPenColor(color)}
-                  />
-                ))}
-              </div>
-
-              <label className="flex min-w-32 flex-1 items-center gap-2 text-xs font-medium text-zinc-600">
-                <Brush className="h-4 w-4 shrink-0" aria-hidden="true" />
-                <input
-                  aria-label={t.penSize}
-                  type="range"
-                  min="1"
-                  max="14"
-                  value={penWidth}
-                  className="w-full accent-zinc-950"
-                  onChange={(event) => setPenWidth(Number(event.target.value))}
-                />
-              </label>
-
-              <label className="flex min-w-32 flex-1 items-center gap-2 text-xs font-medium text-zinc-600">
-                <Eraser className="h-4 w-4 shrink-0 opacity-60" aria-hidden="true" />
-                <input
-                  aria-label={t.opacity}
-                  type="range"
-                  min="0.2"
-                  max="1"
-                  step="0.05"
-                  value={opacity}
-                  className="w-full accent-zinc-950"
-                  onChange={(event) => setOpacity(Number(event.target.value))}
-                />
-              </label>
-            </div>
-          </section>
-        )}
+      <main className="flex flex-1 flex-col h-full min-w-0 overflow-hidden bg-zinc-100 text-zinc-950">
+        {headerPosition === 'top' && renderHeader('top')}
+        {headerPosition === 'top' && renderToolbar()}
+        {headerPosition === 'top' && renderBrushSettings()}
 
         <section className="relative flex flex-1 overflow-auto px-3 py-4">
           {!pdf ? (
@@ -1273,11 +1298,14 @@ function App() {
           )}
 
           {error ? (
-            <div className="fixed inset-x-3 bottom-3 z-30 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 shadow-lg">
+            <div className={`fixed inset-x-3 z-30 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 shadow-lg transition-all duration-300 ${headerPosition === 'bottom' ? 'bottom-[128px]' : 'bottom-3'}`}>
               {error}
             </div>
           ) : null}
         </section>
+        {headerPosition === 'bottom' && renderBrushSettings()}
+        {headerPosition === 'bottom' && renderToolbar()}
+        {headerPosition === 'bottom' && renderHeader('bottom')}
         {isSettingsOpen ? (
           <div className="fixed inset-0 z-40 flex items-end bg-black/30 p-3 sm:items-center sm:justify-center">
             <section className="w-full rounded-lg bg-white p-4 shadow-2xl ring-1 ring-zinc-200 sm:max-w-sm flex flex-col max-h-[85vh]">
@@ -1315,6 +1343,34 @@ function App() {
                     }}
                   />
                 </label>
+
+                <div className="rounded-md border border-zinc-200 bg-white p-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">{t.headerPosition}</p>
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      type="button"
+                      className={`flex-1 rounded-md py-2 px-3 text-xs font-semibold border transition-all ${
+                        headerPosition === 'top'
+                          ? 'bg-zinc-950 text-white border-zinc-950 shadow-sm'
+                          : 'bg-white text-zinc-700 border-zinc-200 hover:bg-zinc-50 hover:text-zinc-900'
+                      }`}
+                      onClick={() => setHeaderPosition('top')}
+                    >
+                      {t.headerTop}
+                    </button>
+                    <button
+                      type="button"
+                      className={`flex-1 rounded-md py-2 px-3 text-xs font-semibold border transition-all ${
+                        headerPosition === 'bottom'
+                          ? 'bg-zinc-950 text-white border-zinc-950 shadow-sm'
+                          : 'bg-white text-zinc-700 border-zinc-200 hover:bg-zinc-50 hover:text-zinc-900'
+                      }`}
+                      onClick={() => setHeaderPosition('bottom')}
+                    >
+                      {t.headerBottom}
+                    </button>
+                  </div>
+                </div>
 
                 {pdf ? (
                   <button
