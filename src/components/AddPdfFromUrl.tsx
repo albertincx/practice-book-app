@@ -23,10 +23,10 @@ export const AddPdfFromUrl = ({ addFromUrl }: any) => {
         }
     };
 
-    const sampleUrl = 'https://www.adobe.com/support/products/enterprise/knowledgecenter/media/c4611_sample_explain.pdf';
+    const sampleUrl = '/c4611_sample_explain.pdf';
 
     return (
-        <div className="max-w-xl mx-auto p-6 bg-white rounded-xl shadow-md border border-gray-100 space-y-4">
+        <div className="max-w-xl mx-auto p-2 bg-white rounded-xl shadow-md border border-gray-100 space-y-2">
             <div>
                 <h2 className="text-xl font-semibold text-gray-800">or Add PDF from URL</h2>
                 <p className="text-sm text-gray-500 mt-1">
