@@ -25,6 +25,7 @@ import type { PDFDocumentProxy, PDFPageProxy } from 'pdfjs-dist'
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url'
 
 import {AddPdfFromUrl} from "./components/AddPdfFromUrl.tsx";
+import Toast from "./components/Toast.tsx";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker
 
@@ -157,7 +158,7 @@ const TRANSLATIONS = {
     useColor: 'Use pen color',
     penSize: 'Pen size',
     opacity: 'Opacity',
-    savedLocally: 'Saved locally',
+    savedLocally: 'Saved',
     pages: 'pages',
     confirmClosePdf: 'Close the current PDF?',
     aboutTitle: 'About PDF Learn',
@@ -270,6 +271,7 @@ function App() {
 
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null)
   const [pdfName, setPdfName] = useState('')
+  const [showToast, setShowToast] = useState('')
   const [pageNumber, setPageNumber] = useState(1)
   const [pageInput, setPageInput] = useState('1')
   const [pageSize, setPageSize] = useState<PageSize | null>(null)
@@ -1074,36 +1076,37 @@ function App() {
 
         <div className="pdf-name-div min-w-0 flex-1 flex justify-between">
           <div className="pdf-name-div min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">{pdfName || t.emptyHeader}</p>
+            <p className="truncate text-sm font-medium" onClick={
+              () => setShowToast(pdfName)
+            }>{pdfName || t.emptyHeader}</p>
             <p className="text-xs text-zinc-500">
               {pdf ? `${t.savedLocally} - ${pdf.numPages} ${t.pages}` : t.selectOrUpload}
             </p>
           </div>
-          <form
-              className="pageinfo-div flex h-10 items-center gap-1 rounded-md border border-zinc-200 bg-white px-2"
-              onSubmit={(event) => {
-                event.preventDefault()
-                goToPage()
-              }}
-          >
-            <Hash className="h-4 w-4 text-zinc-500" />
-            <input
-                aria-label={t.goToPage}
-                className="h-8 w-14 bg-transparent text-center text-sm font-medium tabular-nums text-zinc-950 outline-none"
-                disabled={!pdf}
-                inputMode="numeric"
-                min="1"
-                max={pdf?.numPages}
-                pattern="[0-9]*"
-                type="number"
-                value={pageInput}
-                onBlur={goToPage}
-                onChange={(event) => setPageInput(event.target.value)}
-            />
-            <span className="text-xs text-zinc-400">/ {pdf?.numPages ?? 0}</span>
-          </form>
         </div>
-
+        <form
+            className="pageinfo-div flex h-10 items-center gap-1 rounded-md border border-zinc-200 bg-white px-2"
+            onSubmit={(event) => {
+              event.preventDefault()
+              goToPage()
+            }}
+        >
+          <Hash className="h-4 w-4 text-zinc-500" />
+          <input
+              aria-label={t.goToPage}
+              className="h-8 w-14 bg-transparent text-center text-sm font-medium tabular-nums text-zinc-950 outline-none"
+              disabled={!pdf}
+              inputMode="numeric"
+              min="1"
+              max={pdf?.numPages}
+              pattern="[0-9]*"
+              type="number"
+              value={pageInput}
+              onBlur={goToPage}
+              onChange={(event) => setPageInput(event.target.value)}
+          />
+          <span className="text-xs text-zinc-400">/ {pdf?.numPages ?? 0}</span>
+        </form>
         <button
           type="button"
           className="inline-flex h-10 px-2.5 items-center justify-center rounded-md border border-zinc-200 bg-white text-xs font-bold text-zinc-700 hover:bg-zinc-50 active:scale-95 transition-all"
@@ -1144,18 +1147,7 @@ function App() {
           >
             <Hand className="h-4 w-4" />
           </button>
-          {tool === 'draw' && (
-            <button
-              type="button"
-              aria-label={t.toggleBrushSettings}
-              className={`inline-flex h-9 w-10 items-center justify-center rounded transition-colors ${showBrushSettings ? 'bg-zinc-200 text-zinc-950 hover:bg-zinc-300' : 'text-zinc-400 hover:text-zinc-600 hover:bg-zinc-200/50'}`}
-              onClick={() => setShowBrushSettings((prev) => !prev)}
-            >
-              <Sliders className="h-4 w-4" />
-            </button>
-          )}
         </div>
-
         <button
           type="button"
           aria-label={t.insertText}
@@ -1176,7 +1168,7 @@ function App() {
           >
             <Minus className="h-4 w-4" />
           </button>
-          <span className="w-14 text-center text-sm font-medium tabular-nums">{formatZoom(zoom)}</span>
+          <span className="w-9 text-center text-sm font-medium tabular-nums">{formatZoom(zoom)}</span>
           <button
             type="button"
             aria-label={t.zoomIn}
@@ -1211,25 +1203,36 @@ function App() {
             <span className={'text-xs p-1'}>next page</span>
           </button>
         </div>
-
-        <button
-          type="button"
-          aria-label={t.undo}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-700 disabled:text-zinc-300"
-          disabled={!pageStrokes.length && !pageTexts.length}
-          onClick={undoPageStroke}
-        >
-          <Undo2 className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          aria-label={t.clearPage}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-700 disabled:text-zinc-300"
-          disabled={!pageStrokes.length && !pageTexts.length}
-          onClick={clearPage}
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
+        {tool === 'draw' && (
+            <>
+              <button
+                  type="button"
+                  aria-label={t.toggleBrushSettings}
+                  className={`inline-flex h-9 w-10 items-center justify-center rounded transition-colors ${showBrushSettings ? 'bg-zinc-200 text-zinc-950 hover:bg-zinc-300' : 'text-zinc-400 hover:text-zinc-600 hover:bg-zinc-200/50'}`}
+                  onClick={() => setShowBrushSettings((prev) => !prev)}
+              >
+                <Sliders className="h-4 w-4" />
+              </button>
+              <button
+                  type="button"
+                  aria-label={t.undo}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-700 disabled:text-zinc-300"
+                  disabled={!pageStrokes.length && !pageTexts.length}
+                  onClick={undoPageStroke}
+              >
+                <Undo2 className="h-4 w-4" />
+              </button>
+              <button
+                  type="button"
+                  aria-label={t.clearPage}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-700 disabled:text-zinc-300"
+                  disabled={!pageStrokes.length && !pageTexts.length}
+                  onClick={clearPage}
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </>
+        )}
       </div>
     </section>
   )
@@ -1643,6 +1646,13 @@ function App() {
           </div>
         ) : null}
       </main>
+      {showToast && (
+          <Toast
+              message={showToast}
+              type="success"
+              onClose={() => setShowToast('')}
+          />
+      )}
     </div>
   )
 }
