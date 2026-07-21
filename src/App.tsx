@@ -24,6 +24,8 @@ import * as pdfjsLib from 'pdfjs-dist'
 import type { PDFDocumentProxy, PDFPageProxy } from 'pdfjs-dist'
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url'
 
+import {AddPdfFromUrl} from "./components/AddPdfFromUrl.tsx";
+
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker
 
 type Tool = 'draw' | 'move'
@@ -692,6 +694,26 @@ function App() {
       setIsLoading(false)
     }
   }
+  const loadPdfFromUrl = async (url: string, fileName?: string) => {
+    try {
+      const response = await fetch(url)
+      if (!response.ok) {
+        throw new Error(`Failed to fetch PDF: ${response.statusText}`)
+      }
+
+      const data = await response.arrayBuffer()
+      const nextId = crypto.randomUUID()
+
+      // Fallback filename extracted from URL if not provided
+      const name = fileName || url.split('/').pop()?.split('?')[0] || 'document.pdf'
+
+      await savePdfToLibrary(nextId, name, data)
+      await refreshPdfList()
+      await loadPdfFromLibrary(nextId)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not load PDF from URL.')
+    }
+  }
 
   const loadPdf = async (file: File) => {
     try {
@@ -1311,7 +1333,9 @@ function App() {
             />
           </label>
         </div>
-
+        <AddPdfFromUrl
+            addFromUrl={loadPdfFromUrl}
+        />
         <div className="flex-1 overflow-y-auto p-2 space-y-1">
           {pdfList.length === 0 ? (
             <div className="py-12 text-center text-zinc-400">
