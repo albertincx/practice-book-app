@@ -103,6 +103,22 @@ const DONATE_URL = 'https://boosty.to/safiullin' // TODO: Replace with your actu
 
 type Lang = 'en' | 'ru'
 
+type DeviceScreenInfo = {
+  viewportWidth: number
+  viewportHeight: number
+  outerWidth: number
+  outerHeight: number
+  screenWidth: number
+  screenHeight: number
+  availWidth: number
+  availHeight: number
+  devicePixelRatio: number
+  colorDepth?: number
+  pixelDepth?: number
+  orientationType?: string
+  orientationAngle?: number
+}
+
 const TRANSLATIONS = {
   en: {
     libraryTitle: 'PDF Library',
@@ -155,6 +171,11 @@ const TRANSLATIONS = {
     headerPosition: 'Header Position',
     headerTop: 'Show header at top',
     headerBottom: 'Show header at bottom',
+    deviceScreenInfo: 'Device screen info',
+    openFullscreen: 'Open to fullscreen',
+    exitFullscreen: 'Exit fullscreen',
+    fullscreenUnavailable: 'Fullscreen is not supported in this browser.',
+    fullscreenError: 'Could not open fullscreen.',
   },
   ru: {
     libraryTitle: 'Библиотека PDF',
@@ -207,6 +228,11 @@ const TRANSLATIONS = {
     headerPosition: 'Положение шапки',
     headerTop: 'Показывать шапку вверху',
     headerBottom: 'Показывать шапку внизу',
+    deviceScreenInfo: 'Информация об экране устройства',
+    openFullscreen: 'Открыть на весь экран',
+    exitFullscreen: 'Выйти из полноэкранного режима',
+    fullscreenUnavailable: 'Полноэкранный режим не поддерживается в этом браузере.',
+    fullscreenError: 'Не удалось открыть полноэкранный режим.',
   }
 }
 
@@ -257,6 +283,8 @@ function App() {
   const [isPaintingEnabled, setIsPaintingEnabled] = useState(true)
   const [isLoading, setIsLoading] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [deviceScreenInfo, setDeviceScreenInfo] = useState<DeviceScreenInfo | null>(null)
+  const [isFullscreen, setIsFullscreen] = useState(false)
   const [isTextDialogOpen, setIsTextDialogOpen] = useState(false)
   const [localDataSize, setLocalDataSize] = useState<number | null>(null)
   const [error, setError] = useState('')
@@ -283,6 +311,13 @@ function App() {
   }, [headerPosition])
 
   useEffect(() => {
+    const update = () => setIsFullscreen(!!document.fullscreenElement)
+    update()
+    document.addEventListener('fullscreenchange', update)
+    return () => document.removeEventListener('fullscreenchange', update)
+  }, [])
+
+  useEffect(() => {
     if (pdfName) {
       document.title = `${pdfName} — PDF Learn`
     } else {
@@ -293,12 +328,49 @@ function App() {
   }, [pdfName, lang])
 
   useEffect(() => {
-    if (typeof window === 'undefined') {
+    const childElement = document.getElementById('main-sec');
+    if (!childElement) {
+      return
+    }
+    // console.log('a')
+    childElement.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [activePdfId, pdfName, pdf, pageNumber])
+
+  useEffect(() => {
+    if (!isSettingsOpen) {
       return
     }
 
-    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
-  }, [activePdfId, pdfName, pdf])
+    const readInfo = () => {
+      const orientation = (window.screen as any)?.orientation as
+        | { type?: string; angle?: number }
+        | undefined
+
+      setDeviceScreenInfo({
+        viewportWidth: window.innerWidth,
+        viewportHeight: window.innerHeight,
+        outerWidth: window.outerWidth,
+        outerHeight: window.outerHeight,
+        screenWidth: window.screen.width,
+        screenHeight: window.screen.height,
+        availWidth: window.screen.availWidth,
+        availHeight: window.screen.availHeight,
+        devicePixelRatio: window.devicePixelRatio || 1,
+        colorDepth: window.screen.colorDepth,
+        pixelDepth: window.screen.pixelDepth,
+        orientationType: orientation?.type,
+        orientationAngle: orientation?.angle,
+      })
+    }
+
+    readInfo()
+    window.addEventListener('resize', readInfo)
+    window.addEventListener('orientationchange', readInfo)
+    return () => {
+      window.removeEventListener('resize', readInfo)
+      window.removeEventListener('orientationchange', readInfo)
+    }
+  }, [isSettingsOpen])
 
   const pageStrokes = useMemo(
     () => strokes.filter((stroke) => stroke.page === pageNumber),
@@ -927,6 +999,45 @@ function App() {
 
   const t = TRANSLATIONS[lang]
 
+  const fullscreenSupported =
+    typeof document !== 'undefined' &&
+    typeof document.fullscreenEnabled === 'boolean' &&
+    document.fullscreenEnabled
+
+  const deviceScreenInfoText = deviceScreenInfo
+    ? [
+      `Viewport: ${deviceScreenInfo.viewportWidth}×${deviceScreenInfo.viewportHeight}`,
+      `Screen: ${deviceScreenInfo.screenWidth}×${deviceScreenInfo.screenHeight} (avail ${deviceScreenInfo.availWidth}×${deviceScreenInfo.availHeight})`,
+      `Outer: ${deviceScreenInfo.outerWidth}×${deviceScreenInfo.outerHeight}`,
+      `DPR: ${deviceScreenInfo.devicePixelRatio}`,
+      `Color depth: ${deviceScreenInfo.colorDepth ?? '—'} | Pixel depth: ${deviceScreenInfo.pixelDepth ?? '—'}`,
+      `Orientation: ${deviceScreenInfo.orientationType ?? '—'}${
+        deviceScreenInfo.orientationAngle != null ? ` (${deviceScreenInfo.orientationAngle}°)` : ''
+      }`,
+    ].join('\n')
+    : '...'
+
+  const openToFullscreen = async () => {
+    setError('')
+    setIsSettingsOpen(false)
+
+    try {
+      if (!fullscreenSupported) {
+        setError(t.fullscreenUnavailable)
+        return
+      }
+
+      if (document.fullscreenElement) {
+        await document.exitFullscreen()
+        return
+      }
+
+      await document.documentElement.requestFullscreen()
+    } catch {
+      setError(t.fullscreenError)
+    }
+  }
+
   const renderHeader = (position: 'top' | 'bottom') => (
     <header className={`sticky ${position === 'top' ? 'top-0 border-b shadow-sm' : 'bottom-0 border-t shadow-[0_-1px_3px_rgba(0,0,0,0.05)]'} z-20 border-zinc-200 bg-white/95 px-3 py-2 backdrop-blur shrink-0`}>
       <div className="mx-auto flex max-w-5xl items-center gap-2">
@@ -939,11 +1050,36 @@ function App() {
           <Menu className="h-5 w-5" />
         </button>
 
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium">{pdfName || t.emptyHeader}</p>
-          <p className="text-xs text-zinc-500">
-            {pdf ? `${t.savedLocally} - ${pdf.numPages} ${t.pages}` : t.selectOrUpload}
-          </p>
+        <div className="pdf-name-div min-w-0 flex-1 flex justify-between">
+          <div className="pdf-name-div min-w-0 flex-1">
+            <p className="truncate text-sm font-medium">{pdfName || t.emptyHeader}</p>
+            <p className="text-xs text-zinc-500">
+              {pdf ? `${t.savedLocally} - ${pdf.numPages} ${t.pages}` : t.selectOrUpload}
+            </p>
+          </div>
+          <form
+              className="pageinfo-div flex h-10 items-center gap-1 rounded-md border border-zinc-200 bg-white px-2"
+              onSubmit={(event) => {
+                event.preventDefault()
+                goToPage()
+              }}
+          >
+            <Hash className="h-4 w-4 text-zinc-500" />
+            <input
+                aria-label={t.goToPage}
+                className="h-8 w-14 bg-transparent text-center text-sm font-medium tabular-nums text-zinc-950 outline-none"
+                disabled={!pdf}
+                inputMode="numeric"
+                min="1"
+                max={pdf?.numPages}
+                pattern="[0-9]*"
+                type="number"
+                value={pageInput}
+                onBlur={goToPage}
+                onChange={(event) => setPageInput(event.target.value)}
+            />
+            <span className="text-xs text-zinc-400">/ {pdf?.numPages ?? 0}</span>
+          </form>
         </div>
 
         <button
@@ -1038,6 +1174,8 @@ function App() {
             disabled={!pdf || pageNumber <= 1}
             onClick={() => setPageNumber((current) => current - 1)}
           >
+            <span className={'text-xs p-1'}>prev page</span>
+
             <ChevronLeft className="h-4 w-4" />
           </button>
           <button
@@ -1048,32 +1186,9 @@ function App() {
             onClick={() => setPageNumber((current) => current + 1)}
           >
             <ChevronRight className="h-4 w-4" />
+            <span className={'text-xs p-1'}>next page</span>
           </button>
         </div>
-
-        <form
-          className="flex h-10 items-center gap-1 rounded-md border border-zinc-200 bg-white px-2"
-          onSubmit={(event) => {
-            event.preventDefault()
-            goToPage()
-          }}
-        >
-          <Hash className="h-4 w-4 text-zinc-500" />
-          <input
-            aria-label={t.goToPage}
-            className="h-8 w-14 bg-transparent text-center text-sm font-medium tabular-nums text-zinc-950 outline-none"
-            disabled={!pdf}
-            inputMode="numeric"
-            min="1"
-            max={pdf?.numPages}
-            pattern="[0-9]*"
-            type="number"
-            value={pageInput}
-            onBlur={goToPage}
-            onChange={(event) => setPageInput(event.target.value)}
-          />
-          <span className="text-xs text-zinc-400">/ {pdf?.numPages ?? 0}</span>
-        </form>
 
         <button
           type="button"
@@ -1252,7 +1367,7 @@ function App() {
         {headerPosition === 'top' && renderToolbar()}
         {headerPosition === 'top' && renderBrushSettings()}
 
-        <section className="relative flex flex-1 overflow-auto px-3 py-4">
+        <section id={'main-sec'} className="relative flex flex-1 overflow-auto px-3 py-4">
           {!pdf ? (
             <div className="m-auto flex max-w-sm flex-col items-center gap-4 rounded-lg border border-dashed border-zinc-300 bg-white p-8 text-center shadow-sm">
               <FileUp className="h-10 w-10 text-zinc-400" />
@@ -1335,6 +1450,22 @@ function App() {
                   <p className="mt-1 text-2xl font-semibold tabular-nums text-zinc-950">
                     {localDataSize === null ? '...' : formatBytes(localDataSize)}
                   </p>
+                </div>
+
+                <button
+                  type="button"
+                  className="inline-flex h-11 w-full items-center justify-center rounded-md border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-700 hover:bg-zinc-50 active:scale-95 transition-all disabled:text-zinc-400 disabled:bg-white disabled:hover:bg-white"
+                  disabled={!fullscreenSupported}
+                  onClick={() => void openToFullscreen()}
+                >
+                  {isFullscreen ? t.exitFullscreen : t.openFullscreen}
+                </button>
+
+                <div className="rounded-md border border-zinc-200 bg-white p-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">{t.deviceScreenInfo}</p>
+                  <pre className="mt-2 whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed text-zinc-700">
+                    {deviceScreenInfoText}
+                  </pre>
                 </div>
 
                 <label className="flex items-center justify-between gap-3 rounded-md border border-zinc-200 bg-white p-3 cursor-pointer hover:bg-zinc-50 transition-colors">
