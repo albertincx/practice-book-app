@@ -292,6 +292,14 @@ function App() {
     }
   }, [pdfName, lang])
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [activePdfId, pdfName, pdf])
+
   const pageStrokes = useMemo(
     () => strokes.filter((stroke) => stroke.page === pageNumber),
     [pageNumber, strokes],
