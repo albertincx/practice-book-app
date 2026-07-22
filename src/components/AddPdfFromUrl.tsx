@@ -24,6 +24,7 @@ export const AddPdfFromUrl = ({ addFromUrl }: any) => {
     };
 
     const sampleUrl = '/c4611_sample_explain.pdf';
+    const su = 'https://www.adobe.com/support/products/enterprise/knowledgecenter/media/c4611_sample_explain.pdf'
 
     return (
         <div className="max-w-xl mx-auto p-2 bg-white rounded-xl shadow-md border border-gray-100 space-y-2">
@@ -37,6 +38,14 @@ export const AddPdfFromUrl = ({ addFromUrl }: any) => {
                         className="text-indigo-600 hover:text-indigo-800 underline focus:outline-none font-medium cursor-pointer"
                     >
                         use test sample
+                    </button>
+                    <span className={'p-2'}>or</span>
+                    <button
+                        type="button"
+                        onClick={() => setUrl(su)}
+                        className="text-indigo-600 hover:text-indigo-800 underline focus:outline-none font-medium cursor-pointer"
+                    >
+                        use test sample link
                     </button>
                 </p>
             </div>

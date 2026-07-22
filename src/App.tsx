@@ -1180,7 +1180,7 @@ function App() {
           </button>
         </div>
 
-        <div className="flex items-center rounded-md border border-zinc-200 bg-white">
+        <div className="w-24_ inline-flex_ flex flex-auto items-center justify-between rounded-md border border-zinc-200 bg-white">
           <button
             type="button"
             aria-label={t.prevPage}
@@ -1188,7 +1188,7 @@ function App() {
             disabled={!pdf || pageNumber <= 1}
             onClick={() => setPageNumber((current) => current - 1)}
           >
-            <span className={'text-xs p-1'}>prev page</span>
+            <span className={'w-2_ text-xs p-1'}>prev page</span>
 
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -1199,8 +1199,8 @@ function App() {
             disabled={!pdf || pageNumber >= pdf.numPages}
             onClick={() => setPageNumber((current) => current + 1)}
           >
-            <ChevronRight className="h-4 w-4" />
-            <span className={'text-xs p-1'}>next page</span>
+            <ChevronRight className="h-4 w-4 flex-none" />
+            <span className={'w-[24px]_ text-xs p-1 -ml-[9px]_'}>next page</span>
           </button>
         </div>
         {tool === 'draw' && (
