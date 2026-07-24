@@ -1,0 +1,11 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "dev.safiullin.practicebookapp",
+      "sha256_cert_fingerprints":
+      ["BB:E4:12:92:76:EE:18:A0:13:47:20:50:8C:FF:33:8E:41:80:15:6A:AD:7F:BE:25:9B:68:2F:F1:9F:E1:18:64"]
+    }
+  }
+]
