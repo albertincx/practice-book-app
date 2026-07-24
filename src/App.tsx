@@ -1653,6 +1653,18 @@ function App() {
               onClose={() => setShowToast('')}
           />
       )}
+      <div
+          className={`rounded-md border border-zinc-200 bg-zinc-100 fixed p-2_  bottom-1 right-1 ${tool === 'draw' ? '' : ''}`}
+      >
+        <button
+            type="button"
+            aria-label={t.moveMode}
+            className={`inline-flex h-9 w-10 items-center justify-center rounded ${tool === 'move' ? 'bg-white text-zinc-950 shadow-sm' : 'text-zinc-500'}`}
+            onClick={() => changeTool(tool === 'move' ? 'draw' : 'move')}
+        >
+            {tool === 'move' ? <Brush className="h-4 w-4"/> : <Hand className="h-4 w-4"/>}
+        </button>
+      </div>
     </div>
   )
 }
