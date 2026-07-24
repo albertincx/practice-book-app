@@ -1180,7 +1180,7 @@ function App() {
           </button>
         </div>
 
-        <div className="w-24_ inline-flex_ flex flex-auto items-center justify-between rounded-md border border-zinc-200 bg-white">
+        <div className="flex flex-auto items-center justify-between rounded-md border border-zinc-200 bg-white">
           <button
             type="button"
             aria-label={t.prevPage}
@@ -1188,9 +1188,8 @@ function App() {
             disabled={!pdf || pageNumber <= 1}
             onClick={() => setPageNumber((current) => current - 1)}
           >
-            <span className={'w-2_ text-xs p-1'}>prev page</span>
-
-            <ChevronLeft className="h-4 w-4" />
+            <span className={'hidden text-xs p-1'}>prev page</span>
+            <ChevronLeft className="h-4 w-4 min-w-[16px]" />
           </button>
           <button
             type="button"
@@ -1200,7 +1199,7 @@ function App() {
             onClick={() => setPageNumber((current) => current + 1)}
           >
             <ChevronRight className="h-4 w-4 flex-none" />
-            <span className={'w-[24px]_ text-xs p-1 -ml-[9px]_'}>next page</span>
+            <span className={'hidden text-xs p-1'}>next page</span>
           </button>
         </div>
         {tool === 'draw' && (
@@ -1394,7 +1393,7 @@ function App() {
         {headerPosition === 'top' && renderToolbar()}
         {headerPosition === 'top' && renderBrushSettings()}
 
-        <section id={'main-sec'} className="relative flex flex-1 overflow-auto px-3 py-4">
+        <section id={'main-sec'} className="relative flex flex-1 overflow-auto px-3 py-4 bg-[#ddd]">
           {!pdf ? (
             <div className="m-auto flex max-w-sm flex-col items-center gap-4 rounded-lg border border-dashed border-zinc-300 bg-white p-8 text-center shadow-sm">
               <FileUp className="h-10 w-10 text-zinc-400" />
@@ -1417,7 +1416,7 @@ function App() {
           ) : (
             <div className="mx-auto min-w-max pb-24">
               <div
-                className="relative overflow-hidden rounded-md bg-white shadow-xl ring-1 ring-zinc-200"
+                className="relative overflow-hidden rounded-md bg-white shadow-xl ring-1 ring-zinc-200 mb-10"
                 style={{
                   width: pageSize ? pageSize.width * zoom : undefined,
                   height: pageSize ? pageSize.height * zoom : undefined,
@@ -1444,6 +1443,7 @@ function App() {
                   </div>
                 ) : null}
               </div>
+              <div className={'h-10'}></div>
             </div>
           )}
 

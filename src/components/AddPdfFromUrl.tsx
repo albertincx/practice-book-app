@@ -23,7 +23,7 @@ export const AddPdfFromUrl = ({ addFromUrl }: any) => {
         }
     };
 
-    const sampleUrl = '/c4611_sample_explain.pdf';
+    const sampleUrl = '/c4611_sample_explain_c4611_sample_explain.pdf';
     const su = 'https://www.adobe.com/support/products/enterprise/knowledgecenter/media/c4611_sample_explain.pdf'
 
     return (

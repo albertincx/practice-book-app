@@ -20,14 +20,14 @@ export default function Toast({message, type = "info", onClose, duration = 3000}
 
     return (
         <div
-            className={`fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 px-5 py-3 rounded-lg shadow-xl z-50 animate-slide-up text-sm font-medium ${
+            className={`fixed bottom-4 left-4 right-4 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:max-w-md w-auto flex items-center justify-between gap-4 px-4 py-3 sm:px-5 rounded-lg shadow-xl z-50 animate-slide-up text-sm font-medium ${
                 typeStyles[type] || typeStyles.info
             }`}
         >
-            <span>{message}</span>
+            <span className="flex-1 break-words">{message}</span>
             <button
                 onClick={onClose}
-                className="text-white/80 hover:text-white text-lg font-bold leading-none transition-colors"
+                className="text-white/80 hover:text-white text-lg font-bold leading-none transition-colors p-1 -m-1"
                 aria-label="Close toast"
             >
                 &times;
