@@ -128,6 +128,7 @@ const TRANSLATIONS = {
     en: {
         libraryTitle: 'PDF Library',
         addPdf: 'Add PDF',
+        addExPdf: 'load example pdf',
         emptyLibrary: 'Library is empty',
         emptyLibrarySub: 'Upload a file to get started',
         drawings: 'Drawings',
@@ -185,6 +186,7 @@ const TRANSLATIONS = {
     ru: {
         libraryTitle: 'Библиотека PDF',
         addPdf: 'Добавить PDF',
+        addExPdf: 'Тестовый PDF',
         emptyLibrary: 'Библиотека пуста',
         emptyLibrarySub: 'Загрузите файл для начала работы',
         drawings: 'Рисунков',
@@ -793,6 +795,7 @@ function App() {
         }
     }
     const loadPdfFromUrl = async (url: string, fileName?: string) => {
+        // console.log('a', url)
         try {
             const response = await fetch(url)
             if (!response.ok) {
@@ -1509,6 +1512,17 @@ function App() {
                                         event.currentTarget.value = ''
                                     }}
                                 />
+                            </label>
+                            <div>OR</div>
+                            <label
+                                className="inline-flex cursor-pointer items-center justify-center rounded-md bg-zinc-950 px-4 py-2 text-sm font-medium text-white active:scale-95"
+                                onClick={() => {
+                                    const sampleUrl = '/c4611_sample_explain_c4611_sample_explain.pdf';
+                                    void loadPdfFromUrl(sampleUrl)
+                                    // event.currentTarget.value = ''
+                                }}
+                            >
+                                {t.addExPdf}
                             </label>
                         </div>
                     ) : (
