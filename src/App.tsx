@@ -1163,8 +1163,8 @@ function App() {
             className={`sticky ${position === 'top' ? 'top-0 border-b shadow-sm' : 'bottom-0 border-t shadow-[0_-1px_3px_rgba(0,0,0,0.05)]'} z-20 border-zinc-200 bg-white/95 px-3 py-2 backdrop-blur shrink-0`}>
             <div className="mx-auto flex max-w-5xl items-center gap-2">
                 <button
+                    aria-label="Toggle sidebar"
                     type="button"
-                    aria-label={t.libraryTitle}
                     className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 active:scale-95 transition-all"
                     onClick={() => setIsSidebarOpen((prev) => !prev)}
                 >
@@ -1204,7 +1204,7 @@ function App() {
                         onBlur={goToPage}
                         onChange={(event) => setPageInput(event.target.value)}
                     />
-                    <span className="text-xs text-zinc-400">/ {pdf?.numPages ?? 0}</span>
+                    <span className="text-xs text-zinc-500">/ {pdf?.numPages ?? 0}</span>
                 </form>
                 <button
                     type="button"
@@ -1299,7 +1299,7 @@ function App() {
                         <button
                             type="button"
                             aria-label={t.toggleBrushSettings}
-                            className={`inline-flex h-9 w-10 items-center justify-center rounded transition-colors ${showBrushSettings ? 'bg-zinc-200 text-zinc-950 hover:bg-zinc-300' : 'text-zinc-400 hover:text-zinc-600 hover:bg-zinc-200/50'}`}
+                            className={`inline-flex h-9 w-10 items-center justify-center rounded transition-colors ${showBrushSettings ? 'bg-zinc-200 text-zinc-950 hover:bg-zinc-300' : 'text-zinc-500 hover:text-zinc-700 hover:bg-zinc-200/50'}`}
                             onClick={() => setShowBrushSettings((prev) => !prev)}
                         >
                             <Sliders className="h-4 w-4"/>
@@ -1347,7 +1347,7 @@ function App() {
                         ))}
                     </div>
 
-                    <label className="flex min-w-32 flex-1 items-center gap-2 text-xs font-medium text-zinc-600">
+                    <label className="flex min-w-32 flex-1 items-center gap-2 text-xs font-medium text-zinc-700">
                         <Brush className="h-4 w-4 shrink-0" aria-hidden="true"/>
                         <input
                             aria-label={t.penSize}
@@ -1360,7 +1360,7 @@ function App() {
                         />
                     </label>
 
-                    <label className="flex min-w-32 flex-1 items-center gap-2 text-xs font-medium text-zinc-600">
+                    <label className="flex min-w-32 flex-1 items-center gap-2 text-xs font-medium text-zinc-700">
                         <Eraser className="h-4 w-4 shrink-0 opacity-60" aria-hidden="true"/>
                         <input
                             aria-label={t.opacity}
@@ -1402,6 +1402,7 @@ function App() {
                         <span>{t.libraryTitle}</span>
                     </div>
                     <button
+                        aria-label="Toggle sidebar"
                         type="button"
                         className="inline-flex h-8 w-8 items-center justify-center rounded-md text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 lg:hidden"
                         onClick={() => setIsSidebarOpen(false)}
@@ -1434,7 +1435,7 @@ function App() {
                 />
                 <div className="flex-1 overflow-y-auto p-2 space-y-1">
                     {pdfList.length === 0 ? (
-                        <div className="py-12 text-center text-zinc-400">
+                        <div className="py-12 text-center text-zinc-500">
                             <FileText className="mx-auto h-8 w-8 opacity-40 mb-2"/>
                             <p className="text-xs">{t.emptyLibrary}</p>
                             <p className="text-[10px] mt-1">{t.emptyLibrarySub}</p>
@@ -1452,12 +1453,12 @@ function App() {
                   `}
                                 >
                                     <FileText
-                                        className={`h-5 w-5 shrink-0 mt-0.5 ${isActive ? 'text-zinc-900' : 'text-zinc-400 group-hover:text-zinc-500'}`}/>
+                                        className={`h-5 w-5 shrink-0 mt-0.5 ${isActive ? 'text-zinc-900' : 'text-zinc-500 group-hover:text-zinc-500'}`}/>
                                     <div className="min-w-0 flex-1">
                                         <p className={`truncate text-sm ${isActive ? 'text-zinc-900 font-semibold' : 'text-zinc-700'}`}>
                                             {item.name}
                                         </p>
-                                        <div className="flex items-center gap-1.5 mt-1 text-[10px] text-zinc-400">
+                                        <div className="flex items-center gap-1.5 mt-1 text-[10px] text-zinc-500">
                                             {item.strokes && item.strokes.length > 0 && (
                                                 <span>{t.drawings}: {item.strokes.length}</span>
                                             )}
@@ -1470,7 +1471,7 @@ function App() {
                                     <button
                                         type="button"
                                         aria-label={t.deleteConfirm.replace('"{name}"', item.name)}
-                                        className="opacity-0 group-hover:opacity-100 focus:opacity-100 shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-md hover:bg-zinc-200 text-zinc-400 hover:text-red-600 transition-all self-center"
+                                        className="opacity-0 group-hover:opacity-100 focus:opacity-100 shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-md hover:bg-zinc-200 text-zinc-500 hover:text-red-600 transition-all self-center"
                                         onClick={(e) => void handleDeletePdf(item.id, e)}
                                     >
                                         <Trash2 className="h-4 w-4"/>
@@ -1492,7 +1493,7 @@ function App() {
                     {!pdf ? (
                         <div
                             className="m-auto flex max-w-sm flex-col items-center gap-4 rounded-lg border border-dashed border-zinc-300 bg-white p-8 text-center shadow-sm">
-                            <FileUp className="h-10 w-10 text-zinc-400"/>
+                            <FileUp className="h-10 w-10 text-zinc-500"/>
                             <label
                                 className="inline-flex cursor-pointer items-center justify-center rounded-md bg-zinc-950 px-4 py-2 text-sm font-medium text-white active:scale-95">
                                 {t.addPdf}
@@ -1531,7 +1532,7 @@ function App() {
                                 />
                                 {isLoading ? (
                                     <div
-                                        className="absolute inset-0 grid place-items-center bg-white/70 text-sm font-medium text-zinc-600">
+                                        className="absolute inset-0 grid place-items-center bg-white/70 text-sm font-medium text-zinc-700">
                                         {t.loading}
                                     </div>
                                 ) : null}
@@ -1591,7 +1592,7 @@ function App() {
 
                                 <button
                                     type="button"
-                                    className="inline-flex h-11 w-full items-center justify-center rounded-md border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-700 hover:bg-zinc-50 active:scale-95 transition-all disabled:text-zinc-400 disabled:bg-white disabled:hover:bg-white"
+                                    className="inline-flex h-11 w-full items-center justify-center rounded-md border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-700 hover:bg-zinc-50 active:scale-95 transition-all disabled:text-zinc-500 disabled:bg-white disabled:hover:bg-white"
                                     disabled={!fullscreenSupported}
                                     onClick={() => void openToFullscreen()}
                                 >
@@ -1685,10 +1686,10 @@ function App() {
                                         className="flex cursor-pointer items-center justify-between text-sm font-medium text-zinc-800 focus:outline-none">
                                         <span>{t.aboutTitle}</span>
                                         <ChevronRight
-                                            className="h-4 w-4 text-zinc-400 transition-transform group-open:rotate-90"/>
+                                            className="h-4 w-4 text-zinc-500 transition-transform group-open:rotate-90"/>
                                     </summary>
                                     <div
-                                        className="mt-3 text-xs text-zinc-600 space-y-2 border-t border-zinc-200/60 pt-3 select-text leading-relaxed">
+                                        className="mt-3 text-xs text-zinc-700 space-y-2 border-t border-zinc-200/60 pt-3 select-text leading-relaxed">
                                         <p>{t.aboutDesc}</p>
                                         <p className="font-semibold text-zinc-700 mt-2">{t.featuresTitle}:</p>
                                         <ul className="list-disc pl-4 space-y-1">
