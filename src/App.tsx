@@ -1574,7 +1574,10 @@ function App() {
                                     <X className="h-4 w-4"/>
                                 </button>
                             </div>
-
+                            <p className="text-sm font-semibold tabular-nums text-zinc-950">
+                                {/* @ts-ignore */}
+                                Last update: {__APP_VERSION__}
+                            </p>
                             <div className="mt-4 overflow-y-auto flex-1 pr-1 space-y-3">
                                 <button
                                     type="button"

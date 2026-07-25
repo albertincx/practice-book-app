@@ -1,7 +1,11 @@
-import { defineConfig } from 'vite'
+import {defineConfig} from 'vite'
 import react from '@vitejs/plugin-react'
 
-// https://vite.dev/config/
+const now = new Date()
+const buildDate = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}.${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`
 export default defineConfig({
-  plugins: [react()],
+    plugins: [react()],
+    define: {
+        __APP_VERSION__: JSON.stringify(buildDate),
+    }
 })
