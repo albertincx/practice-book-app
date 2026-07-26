@@ -15,7 +15,6 @@ import {
     Minus,
     Plus,
     Settings,
-    Share,
     Sliders,
     Trash2,
     Type,
@@ -240,8 +239,124 @@ const TRANSLATIONS = {
         exitFullscreen: 'Выйти из полноэкранного режима',
         fullscreenUnavailable: 'Полноэкранный режим не поддерживается в этом браузере.',
         fullscreenError: 'Не удалось открыть полноэкранный режим.',
+    },
+    th: {
+        libraryTitle: 'คลัง PDF',
+        addPdf: 'เพิ่ม PDF',
+        addExPdf: 'โหลดไฟล์ PDF ตัวอย่าง',
+        emptyLibrary: 'คลังว่างเปล่า',
+        emptyLibrarySub: 'อัปโหลดไฟล์เพื่อเริ่มต้นใช้งาน',
+        drawings: 'ภาพวาด',
+        texts: 'ข้อความ',
+        pageShort: 'หน้า',
+        deleteConfirm: 'ลบ "{name}" และภาพวาด/คำอธิบายประกอบทั้งหมดหรือไม่?',
+        confirmClearAll: 'ลบคลัง PDF ทั้งหมดและภาพวาดทั้งหมดหรือไม่?',
+        emptyHeader: 'คลังว่างเปล่า',
+        selectOrUpload: 'เลือกหรืออัปโหลดไฟล์ PDF',
+        closePdf: 'ปิด PDF',
+        settings: 'การตั้งค่า',
+        drawMode: 'โหมดวาดภาพ',
+        moveMode: 'โหมดเลื่อน',
+        toggleBrushSettings: 'สลับการตั้งค่าพู่กัน',
+        insertText: 'แทรกข้อความ',
+        zoomOut: 'ย่อ',
+        zoomIn: 'ขยาย',
+        prevPage: 'หน้าก่อนหน้า',
+        nextPage: 'หน้าถัดไป',
+        goToPage: 'ไปที่หน้า',
+        undo: 'เลิกทำ',
+        clearPage: 'ล้างหน้า',
+        tapToPlace: 'แตะเพื่อวางข้อความ',
+        loading: 'กำลังโหลด',
+        localData: 'ข้อมูลในเครื่อง',
+        painting: 'การวาด',
+        deleteLocalData: 'ลบข้อมูลในเครื่อง',
+        cancel: 'ยกเลิก',
+        ok: 'ตกลง',
+        useColor: 'ใช้สีปากกา',
+        penSize: 'ขนาดปากกา',
+        opacity: 'ความทึบ',
+        savedLocally: 'บันทึกแล้ว',
+        pages: 'หน้า',
+        confirmClosePdf: 'ปิด PDF ปัจจุบันหรือไม่?',
+        aboutTitle: 'เกี่ยวกับ PDF Learn',
+        aboutDesc: 'PDF Learn เป็นเครื่องมือที่ปลอดภัย รวดเร็ว และฟรีทั้งหมดสำหรับแก้ไข PDF โดยตรงในเบราว์เซอร์ของคุณ วาด เขียน เซ็นชื่อ และใส่คำอธิบายประกอบเอกสารโดยไม่ต้องติดตั้งซอฟต์แวร์ใดๆ',
+        privacyNote: 'ความเป็นส่วนตัว 100%: การประมวลผลทั้งหมดเกิดขึ้นบนอุปกรณ์ของคุณ เอกสารของคุณจะไม่ถูกอัปโหลดไปยังเซิร์ฟเวอร์ใดๆ',
+        featuresTitle: 'คุณสมบัติหลัก',
+        featureDraw: 'วาดและร่างภาพ: ทำเครื่องหมายไฟล์ด้วยสีปากกา ความหนา และความทึบที่กำหนดเอง',
+        featureText: 'เพิ่มข้อความ: แทรกบล็อกข้อความได้ทุกที่เพื่อกรอกแบบฟอร์มหรือทิ้งความคิดเห็น',
+        featureLocal: 'คลังในเครื่อง: บันทึกเอกสารและคำอธิบายประกอบอย่างปลอดภัยในฐานข้อมูลภายในเบราว์เซอร์ของคุณ',
+        donateTitle: 'สนับสนุนโครงการ',
+        donateBtn: 'สนับสนุนผ่านการบริจาค',
+        donateDesc: 'หาก PDF Learn มีประโยชน์ต่อคุณ โปรดพิจารณา (สนับสนุน) นักพัฒนา!',
+        headerPosition: 'ตำแหน่งส่วนหัว',
+        headerTop: 'แสดงส่วนหัวด้านบน',
+        headerBottom: 'แสดงส่วนหัวด้านล่าง',
+        deviceScreenInfo: 'ข้อมูลหน้าจออุปกรณ์',
+        openFullscreen: 'เปิดแบบเต็มจอ',
+        exitFullscreen: 'ออกจากการแสดงผลเต็มจอ',
+        fullscreenUnavailable: 'เบราว์เซอร์นี้ไม่รองรับโหมดเต็มจอ',
+        fullscreenError: 'ไม่สามารถเปิดโหมดเต็มจอได้',
+    },
+    zh: {
+        libraryTitle: 'PDF 图书馆',
+        addPdf: '添加 PDF',
+        addExPdf: '加载示例 PDF',
+        emptyLibrary: '图书馆为空',
+        emptyLibrarySub: '上传文件以开始使用',
+        drawings: '画作',
+        texts: '文本',
+        pageShort: '页',
+        deleteConfirm: '确定要删除 "{name}" 以及所有图画/注释吗？',
+        confirmClearAll: '确定要清空整个 PDF 图书馆和所有图画吗？',
+        emptyHeader: '图书馆为空',
+        selectOrUpload: '选择或上传 PDF 文件',
+        closePdf: '关闭 PDF',
+        settings: '设置',
+        drawMode: '绘制模式',
+        moveMode: '移动模式',
+        toggleBrushSettings: '切换画笔设置',
+        insertText: '插入文本',
+        zoomOut: '缩小',
+        zoomIn: '放大',
+        prevPage: '上一页',
+        nextPage: '下一页',
+        goToPage: '转到页面',
+        undo: '撤销',
+        clearPage: '清除页面',
+        tapToPlace: '点击以放置文本',
+        loading: '加载中',
+        localData: '本地数据',
+        painting: '绘画',
+        deleteLocalData: '删除本地数据',
+        cancel: '取消',
+        ok: '确定',
+        useColor: '使用画笔颜色',
+        penSize: '画笔大小',
+        opacity: '不透明度',
+        savedLocally: '已保存',
+        pages: '页',
+        confirmClosePdf: '关闭当前的 PDF？',
+        aboutTitle: '关于 PDF Learn',
+        aboutDesc: 'PDF Learn 是一个安全、快速且完全免费的工具，可直接在浏览器中编辑 PDF。无需安装任何软件，即可进行绘制、书写、签名和批注。',
+        privacyNote: '100% 隐私保护：所有处理均在您的设备本地完成。您的文档绝不会上传到任何服务器。',
+        featuresTitle: '核心功能',
+        featureDraw: '绘制与草图：使用自定义画笔颜色、粗细和不透明度标记文件。',
+        featureText: '添加文本：在任意位置插入文本块以填写表单或留下评论。',
+        featureLocal: '本地资料库：将文档和注释安全地保存在浏览器的本地数据库中。',
+        donateTitle: '支持该项目',
+        donateBtn: '赞助支持',
+        donateDesc: '如果 PDF Learn 对您有所帮助，请考虑支持开发者！',
+        headerPosition: '标题栏位置',
+        headerTop: '在顶部显示标题栏',
+        headerBottom: '在底部显示标题栏',
+        deviceScreenInfo: '设备屏幕信息',
+        openFullscreen: '进入全屏',
+        exitFullscreen: '退出全屏',
+        fullscreenUnavailable: '当前浏览器不支持全屏模式。',
+        fullscreenError: '无法开启全屏模式。',
     }
-}
+};
 
 function clamp(value: number, min: number, max: number) {
     return Math.min(Math.max(value, min), max)
@@ -329,9 +444,7 @@ function App() {
         if (pdfName) {
             document.title = `${pdfName} — PDF Learn`
         } else {
-            document.title = lang === 'ru'
-                ? 'PDF Learn — Редактор PDF: рисование, заметки и аннотации онлайн'
-                : 'PDF Learn — PDF Editor: Draw and Annotate PDF Online'
+            document.title = `PDF Learn — ${t.featureDraw}`
         }
     }, [pdfName, lang])
 
@@ -430,62 +543,62 @@ function App() {
         URL.revokeObjectURL(url);
     };
 
-    const downPage = () => {
-        const c1 = pdfCanvasRef.current;
-        const c2 = inkCanvasRef.current;
-
-        if (!c1 || !c2) return;
-
-        // 1. Создаем временный холст для объединения
-        const tempCanvas2 = document.createElement('canvas');
-        tempCanvas2.width = c1.width;
-        tempCanvas2.height = c1.height;
-        const ctx = tempCanvas2.getContext('2d');
-
-        // 2. Заливаем белым фоном (для корректного отображения JPG без прозрачности)
-        // @ts-ignore
-        ctx.fillStyle = '#ffffff';
-        // @ts-ignore
-        ctx.fillRect(0, 0, tempCanvas2.width, tempCanvas2.height);
-
-        // 3. Рисуем оба слоя
-        // @ts-ignore
-        ctx.drawImage(c1, 0, 0);
-        // @ts-ignore
-        ctx.drawImage(c2, 0, 0);
-
-        // 4. Получаем Blob (файл изображения в памяти)
-        tempCanvas2.toBlob(async (blob) => {
-            if (!blob) return;
-
-            const file = new File([blob], 'merged-canvas.jpg', {type: 'image/jpeg'});
-
-            // Проверяем, поддерживает ли браузер системное окно "Поделиться" с файлами
-            if (navigator.canShare && navigator.canShare({files: [file]})) {
-                try {
-                    await navigator.share({
-                        title: 'Мой холст',
-                        text: 'Посмотрите на результат объединения двух canvas!',
-                        files: [file],
-                    });
-                    return; // Успешно поделились через системное окно
-                } catch (error) {
-                    // @ts-ignore
-                    if (error.name === 'AbortError') return; // Пользователь сам отменил окно шаринга
-                    console.warn('Ошибка при вызове navigator.share, переходим к скачиванию:', error);
-                }
-            }
-
-            // Запасной вариант (Fallback): если Web Share API недоступен
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.download = 'merged-canvas.jpg';
-            link.href = url;
-            link.click();
-            URL.revokeObjectURL(url);
-
-        }, 'image/jpeg', 0.9);
-    }
+    // const downPage = () => {
+    //     const c1 = pdfCanvasRef.current;
+    //     const c2 = inkCanvasRef.current;
+    //
+    //     if (!c1 || !c2) return;
+    //
+    //     // 1. Создаем временный холст для объединения
+    //     const tempCanvas2 = document.createElement('canvas');
+    //     tempCanvas2.width = c1.width;
+    //     tempCanvas2.height = c1.height;
+    //     const ctx = tempCanvas2.getContext('2d');
+    //
+    //     // 2. Заливаем белым фоном (для корректного отображения JPG без прозрачности)
+    //     // @ts-ignore
+    //     ctx.fillStyle = '#ffffff';
+    //     // @ts-ignore
+    //     ctx.fillRect(0, 0, tempCanvas2.width, tempCanvas2.height);
+    //
+    //     // 3. Рисуем оба слоя
+    //     // @ts-ignore
+    //     ctx.drawImage(c1, 0, 0);
+    //     // @ts-ignore
+    //     ctx.drawImage(c2, 0, 0);
+    //
+    //     // 4. Получаем Blob (файл изображения в памяти)
+    //     tempCanvas2.toBlob(async (blob) => {
+    //         if (!blob) return;
+    //
+    //         const file = new File([blob], 'merged-canvas.jpg', {type: 'image/jpeg'});
+    //
+    //         // Проверяем, поддерживает ли браузер системное окно "Поделиться" с файлами
+    //         if (navigator.canShare && navigator.canShare({files: [file]})) {
+    //             try {
+    //                 await navigator.share({
+    //                     title: 'Мой холст',
+    //                     text: 'Посмотрите на результат объединения двух canvas!',
+    //                     files: [file],
+    //                 });
+    //                 return; // Успешно поделились через системное окно
+    //             } catch (error) {
+    //                 // @ts-ignore
+    //                 if (error.name === 'AbortError') return; // Пользователь сам отменил окно шаринга
+    //                 console.warn('Ошибка при вызове navigator.share, переходим к скачиванию:', error);
+    //             }
+    //         }
+    //
+    //         // Запасной вариант (Fallback): если Web Share API недоступен
+    //         const url = URL.createObjectURL(blob);
+    //         const link = document.createElement('a');
+    //         link.download = 'merged-canvas.jpg';
+    //         link.href = url;
+    //         link.click();
+    //         URL.revokeObjectURL(url);
+    //
+    //     }, 'image/jpeg', 0.9);
+    // }
 
     const refreshPdfList = async () => {
         try {
@@ -1593,13 +1706,21 @@ function App() {
                                 Last update: {__APP_VERSION__}
                             </p>
                             <div className="mt-4 overflow-y-auto flex-1 pr-1 space-y-3">
-                                <button
-                                    type="button"
-                                    className="inline-flex h-10 px-2.5 items-center justify-center rounded-md border border-zinc-200 bg-white text-xs font-bold text-zinc-700 hover:bg-zinc-50 active:scale-95 transition-all"
-                                    onClick={() => setLang((prev) => (prev === 'en' ? 'ru' : 'en'))}
-                                >
-                                    {lang === 'en' ? 'EN' : 'RU'}
-                                </button>
+                                <div className="w-full max-w-sm">
+                                    <label htmlFor="language" className="block text-sm font-medium text-zinc-700 mb-1">
+                                        Choose language
+                                    </label>
+                                    <select
+                                        id="language"
+                                        onChange={(e) => setLang(e.target.value)}
+                                        className="w-full h-10 px-3 rounded-md border border-zinc-200 bg-white text-xs font-bold text-zinc-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-zinc-400 transition-all cursor-pointer"
+                                    >
+                                        <option value="en">English (EN)</option>
+                                        <option value="ru">Russian (RU)</option>
+                                        <option value="th">Thai (TH)</option>
+                                        <option value="zh">Chinese (ZH)</option>
+                                    </select>
+                                </div>
                                 <div className="rounded-md border border-zinc-200 bg-zinc-50 p-3">
                                     <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">{t.localData}</p>
                                     <p className="mt-1 text-2xl font-semibold tabular-nums text-zinc-950">
