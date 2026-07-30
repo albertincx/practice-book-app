@@ -682,7 +682,13 @@ function App() {
             return
         }
 
-        const nextZoom = pinchStateRef.current.zoom * (distance / pinchStateRef.current.distance)
+        // Считаем коэффициент изменения относительно ПРОШЛОГО кадра, а не старта
+        const scaleFactor = distance / pinchStateRef.current.distance
+        const nextZoom = zoom * scaleFactor // Используем текущий актуальный state/переменную зума
+
+        // Обновляем базовое расстояние и текущий зум для следующего шага
+        pinchStateRef.current = {distance, zoom: nextZoom}
+
         updateZoom(nextZoom)
     }
 
