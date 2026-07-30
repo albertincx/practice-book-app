@@ -53,10 +53,10 @@ import {
     type TextAnnotation,
     type TextDragState,
     type Tool,
-    TRANSLATIONS,
     ZOOM_STEP
 } from './utils.ts'
 import NoPdf from "./components/NoPdf.tsx";
+import {TRANSLATIONS} from './translations.ts'
 
 const Sidebar = lazy(() => import('./components/Sidebar.tsx'));
 
@@ -108,6 +108,15 @@ function App() {
         const saved = localStorage.getItem('pdf-lang')
         return (saved === 'ru' || saved === 'en') ? saved : 'en'
     })
+
+    const [isPinchZoomEnabled, setIsPinchZoomEnabled] = useState<boolean>(() => {
+        const saved = localStorage.getItem('pdf-pinch-zoom')
+        return saved !== null ? saved === 'true' : false // По умолчанию включено
+    })
+
+    useEffect(() => {
+        localStorage.setItem('pdf-pinch-zoom', String(isPinchZoomEnabled))
+    }, [isPinchZoomEnabled])
 
     useEffect(() => {
         localStorage.setItem('pdf-lang', lang)
@@ -232,63 +241,6 @@ function App() {
         URL.revokeObjectURL(url);
     };
 
-    // const downPage = () => {
-    //     const c1 = pdfCanvasRef.current;
-    //     const c2 = inkCanvasRef.current;
-    //
-    //     if (!c1 || !c2) return;
-    //
-    //     // 1. Создаем временный холст для объединения
-    //     const tempCanvas2 = document.createElement('canvas');
-    //     tempCanvas2.width = c1.width;
-    //     tempCanvas2.height = c1.height;
-    //     const ctx = tempCanvas2.getContext('2d');
-    //
-    //     // 2. Заливаем белым фоном (для корректного отображения JPG без прозрачности)
-    //     // @ts-ignore
-    //     ctx.fillStyle = '#ffffff';
-    //     // @ts-ignore
-    //     ctx.fillRect(0, 0, tempCanvas2.width, tempCanvas2.height);
-    //
-    //     // 3. Рисуем оба слоя
-    //     // @ts-ignore
-    //     ctx.drawImage(c1, 0, 0);
-    //     // @ts-ignore
-    //     ctx.drawImage(c2, 0, 0);
-    //
-    //     // 4. Получаем Blob (файл изображения в памяти)
-    //     tempCanvas2.toBlob(async (blob) => {
-    //         if (!blob) return;
-    //
-    //         const file = new File([blob], 'merged-canvas.jpg', {type: 'image/jpeg'});
-    //
-    //         // Проверяем, поддерживает ли браузер системное окно "Поделиться" с файлами
-    //         if (navigator.canShare && navigator.canShare({files: [file]})) {
-    //             try {
-    //                 await navigator.share({
-    //                     title: 'Мой холст',
-    //                     text: 'Посмотрите на результат объединения двух canvas!',
-    //                     files: [file],
-    //                 });
-    //                 return; // Успешно поделились через системное окно
-    //             } catch (error) {
-    //                 // @ts-ignore
-    //                 if (error.name === 'AbortError') return; // Пользователь сам отменил окно шаринга
-    //                 console.warn('Ошибка при вызове navigator.share, переходим к скачиванию:', error);
-    //             }
-    //         }
-    //
-    //         // Запасной вариант (Fallback): если Web Share API недоступен
-    //         const url = URL.createObjectURL(blob);
-    //         const link = document.createElement('a');
-    //         link.download = 'merged-canvas.jpg';
-    //         link.href = url;
-    //         link.click();
-    //         URL.revokeObjectURL(url);
-    //
-    //     }, 'image/jpeg', 0.9);
-    // }
-
     const refreshPdfList = async () => {
         try {
             const list = await getAllPdfMetadata()
@@ -394,8 +346,7 @@ function App() {
             }
 
             try {
-                const migratedId = await migrateDatabaseIfNeeded()
-                let activeId = migratedId
+                let activeId = await migrateDatabaseIfNeeded()
                 if (!activeId) {
                     activeId = localStorage.getItem('active-pdf-id')
                 } else {
@@ -647,6 +598,8 @@ function App() {
     }
 
     const updatePinchState = () => {
+        if (!isPinchZoomEnabled) return
+
         const positions = [...pointersRef.current.values()]
         if (positions.length < 2) {
             pinchStateRef.current = null
@@ -686,10 +639,14 @@ function App() {
             return
         }
 
+        if (!isPinchZoomEnabled && pointersRef.current.size > 1) {
+            return
+        }
+
         pointersRef.current.set(event.pointerId, {x: event.clientX, y: event.clientY})
         event.currentTarget.setPointerCapture(event.pointerId)
 
-        if (pointersRef.current.size >= 2) {
+        if (isPinchZoomEnabled && pointersRef.current.size >= 2) {
             cancelActiveStroke()
             updatePinchState()
             return
@@ -740,13 +697,16 @@ function App() {
             pointersRef.current.set(event.pointerId, {x: event.clientX, y: event.clientY})
         }
 
-        if (pointersRef.current.size >= 2) {
+        if (isPinchZoomEnabled && pointersRef.current.size >= 2) {
             textDragRef.current = null
             cancelActiveStroke()
             updatePinchState()
             return
         }
 
+        if (!isPinchZoomEnabled && pointersRef.current.size > 1) {
+            return
+        }
         const textDrag = textDragRef.current
         if (textDrag?.pointerId === event.pointerId) {
             const point = getInkPoint(event)
@@ -925,6 +885,12 @@ function App() {
     }
 
     const t = TRANSLATIONS[lang]
+
+    function getLang(tStr: any) {
+        const defLang = TRANSLATIONS['en']
+        // @ts-ignore
+        return t[tStr] || defLang[tStr]
+    }
 
     const fullscreenSupported =
         typeof document !== 'undefined' &&
@@ -1334,7 +1300,19 @@ function App() {
                     {deviceScreenInfoText}
                   </pre>
                                 </div>
-
+                                <label
+                                    className="flex items-center justify-between gap-3 rounded-md border border-zinc-200 bg-white p-3 cursor-pointer hover:bg-zinc-50 transition-colors">
+                                    <span
+                                        className="text-sm font-medium text-zinc-800">{getLang('pinchToZoomOn')}</span>
+                                    <input
+                                        checked={isPinchZoomEnabled}
+                                        className="h-5 w-5 accent-zinc-950"
+                                        type="checkbox"
+                                        onChange={(event) => {
+                                            setIsPinchZoomEnabled(event.target.checked)
+                                        }}
+                                    />
+                                </label>
                                 <label
                                     className="flex items-center justify-between gap-3 rounded-md border border-zinc-200 bg-white p-3 cursor-pointer hover:bg-zinc-50 transition-colors">
                                     <span className="text-sm font-medium text-zinc-800">{t.painting}</span>
