@@ -1,11 +1,10 @@
-import {type PointerEvent, Suspense, useEffect, useMemo, useRef, useState} from 'react'
+import {lazy, type PointerEvent, Suspense, useEffect, useMemo, useRef, useState} from 'react'
 import {
     Brush,
     ChevronLeft,
     ChevronRight,
     Download,
     Eraser,
-    FileUp,
     Hand,
     Hash,
     Heart,
@@ -57,7 +56,9 @@ import {
     TRANSLATIONS,
     ZOOM_STEP
 } from './utils.ts'
-import Sidebar from './components/Sidebar.tsx'
+import NoPdf from "./components/NoPdf.tsx";
+
+const Sidebar = lazy(() => import('./components/Sidebar.tsx'));
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker
 
@@ -78,7 +79,12 @@ function App() {
     const [pageInput, setPageInput] = useState('1')
     const [pageSize, setPageSize] = useState<PageSize | null>(null)
     const [zoom, setZoom] = useState(1)
-    const [tool, setTool] = useState<Tool>('draw')
+
+    const [tool, setTool] = useState<string>(() => {
+        const saved = localStorage.getItem('pdf-tool')
+        return saved || 'draw'
+    })
+
     const [strokes, setStrokes] = useState<Stroke[]>([])
     const [texts, setTexts] = useState<TextAnnotation[]>([])
     const [pendingText, setPendingText] = useState('')
@@ -96,7 +102,7 @@ function App() {
     const [error, setError] = useState('')
     const [activePdfId, setActivePdfId] = useState<string | null>(null)
     const [pdfList, setPdfList] = useState<PdfMetadata[]>([])
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false)
     const [showBrushSettings, setShowBrushSettings] = useState(true)
     const [lang, setLang] = useState<Lang>(() => {
         const saved = localStorage.getItem('pdf-lang')
@@ -590,6 +596,7 @@ function App() {
             setIsLoading(false)
         }
     }
+
     const loadPdfFromUrl = async (url: string, fileName?: string) => {
         // console.log('a', url)
         try {
@@ -860,6 +867,7 @@ function App() {
         pinchStateRef.current = null
         textDragRef.current = null
         setTool(nextTool)
+        localStorage.setItem('pdf-tool', nextTool)
     }
 
     const openTextDialog = () => {
@@ -1180,7 +1188,7 @@ function App() {
     return (
         <div className="flex h-svh bg-zinc-100 text-zinc-950 overflow-hidden relative">
             {/* Sidebar overlay backdrop for mobile */}
-            {isSidebarOpen && (
+            {pdf && isSidebarOpen && (
                 <div
                     className="fixed inset-0 z-30 bg-zinc-950/20 backdrop-blur-sm lg:hidden"
                     onClick={() => setIsSidebarOpen(false)}
@@ -1188,58 +1196,37 @@ function App() {
             )}
 
             {/* Sidebar */}
-            <Suspense fallback={<div className="w-80 border-r border-zinc-200 bg-white"/>}>
-                <Sidebar
-                    isOpen={isSidebarOpen}
-                    setIsOpen={setIsSidebarOpen}
-                    t={t}
-                    pdfList={pdfList}
-                    activePdfId={activePdfId}
-                    loadPdf={loadPdf}
-                    loadPdfFromUrl={loadPdfFromUrl}
-                    loadPdfFromLibrary={loadPdfFromLibrary}
-                    handleDeletePdf={handleDeletePdf}
-                />
-            </Suspense>
+            {pdf && (
+                <Suspense fallback={<div className="w-80 border-r border-zinc-200 bg-white"/>}>
+                    <Sidebar
+                        isOpen={isSidebarOpen}
+                        setIsOpen={setIsSidebarOpen}
+                        t={t}
+                        pdfList={pdfList}
+                        activePdfId={activePdfId}
+                        loadPdf={loadPdf}
+                        loadPdfFromUrl={loadPdfFromUrl}
+                        loadPdfFromLibrary={loadPdfFromLibrary}
+                        handleDeletePdf={handleDeletePdf}
+                    />
+                </Suspense>
+            )}
 
             {/* Main Content Area */}
             <main className="flex flex-1 flex-col h-full min-w-0 overflow-hidden bg-zinc-100 text-zinc-950">
-                {headerPosition === 'top' && renderHeader('top')}
-                {headerPosition === 'top' && renderToolbar()}
-                {headerPosition === 'top' && renderBrushSettings()}
+                {headerPosition === 'top' && pdf && renderHeader('top')}
+                {headerPosition === 'top' && pdf && renderToolbar()}
+                {headerPosition === 'top' && pdf && renderBrushSettings()}
 
                 <section id={'main-sec'} className="relative flex flex-1 overflow-auto px-3 py-4 bg-[#ddd]">
                     {!pdf ? (
                         <div
                             className="m-auto flex max-w-sm flex-col items-center gap-4 rounded-lg border border-dashed border-zinc-300 bg-white p-8 text-center shadow-sm">
-                            <FileUp className="h-10 w-10 text-zinc-500"/>
-                            <label
-                                className="inline-flex cursor-pointer items-center justify-center rounded-md bg-zinc-950 px-4 py-2 text-sm font-medium text-white active:scale-95">
-                                {t.addPdf}
-                                <input
-                                    className="sr-only"
-                                    type="file"
-                                    accept="application/pdf"
-                                    onChange={(event) => {
-                                        const file = event.target.files?.[0]
-                                        if (file) {
-                                            void loadPdf(file)
-                                        }
-                                        event.currentTarget.value = ''
-                                    }}
-                                />
-                            </label>
-                            <div>OR</div>
-                            <label
-                                className="inline-flex cursor-pointer items-center justify-center rounded-md bg-zinc-950 px-4 py-2 text-sm font-medium text-white active:scale-95"
-                                onClick={() => {
-                                    const sampleUrl = '/c4611_sample_explain_c4611_sample_explain.pdf';
-                                    void loadPdfFromUrl(sampleUrl)
-                                    // event.currentTarget.value = ''
-                                }}
-                            >
-                                {t.addExPdf}
-                            </label>
+                            <NoPdf
+                                t={t}
+                                loadPdf={loadPdf}
+                                loadPdfFromUrl={loadPdfFromUrl}
+                            />
                         </div>
                     ) : (
                         <div className="mx-auto min-w-max pb-24">
@@ -1512,18 +1499,20 @@ function App() {
                     onClose={() => setShowToast('')}
                 />
             )}
-            <div
-                className={`rounded-md border border-zinc-200 bg-zinc-100 fixed p-2_  bottom-2 right-2 ${tool === 'draw' ? '' : ''}`}
-            >
-                <button
-                    type="button"
-                    aria-label={t.moveMode}
-                    className={`inline-flex h-9 w-10 items-center justify-center rounded ${tool === 'move' ? 'bg-white text-zinc-950 shadow-sm' : 'text-zinc-500'}`}
-                    onClick={() => changeTool(tool === 'move' ? 'draw' : 'move')}
+            {pdf && (
+                <div
+                    className={`rounded-md border border-zinc-200 bg-zinc-100 fixed p-2_  bottom-2 right-2 ${tool === 'draw' ? '' : ''}`}
                 >
-                    {tool === 'move' ? <Brush className="h-4 w-4"/> : <Hand className="h-4 w-4"/>}
-                </button>
-            </div>
+                    <button
+                        type="button"
+                        aria-label={t.moveMode}
+                        className={`inline-flex h-9 w-10 items-center justify-center rounded ${tool === 'move' ? 'bg-white text-zinc-950 shadow-sm' : 'text-zinc-500'}`}
+                        onClick={() => changeTool(tool === 'move' ? 'draw' : 'move')}
+                    >
+                        {tool === 'move' ? <Brush className="h-4 w-4"/> : <Hand className="h-4 w-4"/>}
+                    </button>
+                </div>
+            )}
         </div>
     )
 }
