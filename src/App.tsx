@@ -155,6 +155,26 @@ function App() {
         }
     }, [theme])
 
+    useEffect(() => {
+        if ('serviceWorker' in navigator) {
+            const handleMessage = (event: MessageEvent) => {
+                if (event.data && event.data.action === 'load-pdf' && event.data.file) {
+                    void loadPdf(event.data.file)
+                }
+            }
+            navigator.serviceWorker.addEventListener('message', handleMessage)
+
+            // Запрашиваем файл, если мы открылись через share target
+            if (window.location.search.includes('shared=1')) {
+                navigator.serviceWorker.ready.then((registration) => {
+                    registration.active?.postMessage('get-shared-file')
+                })
+            }
+
+            return () => navigator.serviceWorker.removeEventListener('message', handleMessage)
+        }
+    }, [pdf])
+
     const [tool, setTool] = useState<string>(() => {
         const saved = localStorage.getItem('pdf-tool')
         return saved || 'draw'
