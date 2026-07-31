@@ -1379,8 +1379,7 @@ function App() {
                             </div>
                             <p className="text-sm font-semibold tabular-nums text-zinc-950 dark:text-zinc-100">
                                 {/* @ts-ignore */}
-                                Last
-                                update: {__APP_VERSION__}, {localDataSize === null ? '...' : formatBytes(localDataSize)}
+                                Last update: {__APP_VERSION__}, {localDataSize === null ? '...' : formatBytes(localDataSize)}
                             </p>
                             <div className="mt-4 overflow-y-auto flex-1 pr-1 space-y-3">
                                 <ThemeButtons
