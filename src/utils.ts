@@ -74,7 +74,7 @@ export const  PDF_STORE_NAME = 'pdfs'
 export const  LAST_PDF_KEY = 'last-opened'
 export const  DONATE_URL = 'https://boosty.to/safiullin' // TODO: Replace with your actual donation link
 
-export type Lang = 'en' | 'ru'
+export type Lang = string
 
 export type DeviceScreenInfo = {
     viewportWidth: number
@@ -460,4 +460,8 @@ export async  function clearAllLocalData(): Promise<void> {
             reject(transaction.error ?? new Error('Could not clear database.'))
         }
     })
+}
+
+export async function timeout(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms))
 }

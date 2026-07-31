@@ -1,8 +1,10 @@
 import {lazy, type PointerEvent, Suspense, useEffect, useMemo, useRef, useState} from 'react'
 import {
     Brush,
+    ChevronDown,
     ChevronLeft,
     ChevronRight,
+    ChevronUp,
     Download,
     Eraser,
     Hand,
@@ -10,9 +12,12 @@ import {
     Heart,
     Menu,
     Minus,
+    Monitor,
+    Moon,
     Plus,
     Settings,
     Sliders,
+    Sun,
     Trash2,
     Type,
     Undo2,
@@ -57,6 +62,7 @@ import {
 } from './utils.ts'
 import NoPdf from "./components/NoPdf.tsx";
 import {TRANSLATIONS} from './translations.ts'
+import {ThemeButtons} from "./components/ThemeButtons.tsx";
 
 const Sidebar = lazy(() => import('./components/Sidebar.tsx'));
 
@@ -74,6 +80,7 @@ function App() {
 
     const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null)
     const [pdfName, setPdfName] = useState('')
+    const [showTopBar, setStB] = useState(true)
     const [showToast, setShowToast] = useState('')
     const [pageNumber, setPageNumber] = useState(1)
     const [pageInput, setPageInput] = useState('1')
@@ -158,7 +165,7 @@ function App() {
     const [penWidth, setPenWidth] = useState(4)
     const [opacity, setOpacity] = useState(0.65)
     const [isPaintingEnabled, setIsPaintingEnabled] = useState(true)
-    const [isLoading, setIsLoading] = useState(false)
+    const [isLoading, setIsLoading] = useState(true)
     const [isSettingsOpen, setIsSettingsOpen] = useState(false)
     const [deviceScreenInfo, setDeviceScreenInfo] = useState<DeviceScreenInfo | null>(null)
     const [isFullscreen, setIsFullscreen] = useState(false)
@@ -300,7 +307,7 @@ function App() {
         // @ts-ignore
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.download = 'merged-canvas.jpg';
+        link.download = `merged-canvas${pageNumber}.jpg`;
         link.href = url;
         link.click();
         URL.revokeObjectURL(url);
@@ -407,6 +414,7 @@ function App() {
 
         const initApp = async () => {
             if (!('indexedDB' in window)) {
+                // setIsLoading(false)
                 return
             }
 
@@ -420,6 +428,8 @@ function App() {
 
                 const list = await getAllPdfMetadata()
                 if (isCancelled) {
+                    // await timeout(5)
+                    if (list) setIsLoading(false)
                     return
                 }
                 setPdfList(list)
@@ -430,6 +440,7 @@ function App() {
                     await loadPdfFromLibrary(list[0].id)
                 }
             } catch (initError) {
+                // setIsLoading(false)
                 if (!isCancelled) {
                     setError(initError instanceof Error ? initError.message : 'Could not initialize application data.')
                 }
@@ -955,6 +966,7 @@ function App() {
         setPageNumber(clamp(requestedPage, 1, pdf.numPages))
     }
 
+    // @ts-ignore
     const t = TRANSLATIONS[lang]
 
     function getLang(tStr: any) {
@@ -1002,7 +1014,7 @@ function App() {
         }
     }
 
-    const renderHeader = (position: 'top' | 'bottom') => (
+    const renderHeader = (position: 'top' | 'bottom') => showTopBar && (
         <header
             className={`sticky ${position === 'top' ? 'top-0 border-b shadow-sm' : 'bottom-0 border-t shadow-[0_-1px_3px_rgba(0,0,0,0.05)]'} z-20 border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 px-3 py-2 backdrop-blur shrink-0`}>
             <div className="mx-auto flex max-w-5xl items-center gap-2">
@@ -1065,7 +1077,7 @@ function App() {
 
     const renderToolbar = () => (
         <section
-            className={`sec-1 sticky z-10 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 ${headerPosition === 'top' ? 'top-[57px] border-b shadow-sm' : 'bottom-[57px] border-t shadow-[0_-1px_3px_rgba(0,0,0,0.05)]'}`}>
+            className={`sec-1 sticky z-10 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 ${headerPosition === 'top' ? 'top-[57px]_ border-b shadow-sm' : 'bottom-[57px]_ border-t shadow-[0_-1px_3px_rgba(0,0,0,0.05)]'}`}>
             <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-2">
                 <div
                     className="flex rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-800 p-1 gap-0.5">
@@ -1143,6 +1155,26 @@ function App() {
                         <span className={'hidden text-xs p-1'}>next page</span>
                     </button>
                 </div>
+                <button
+                    type="button"
+                    aria-label={t.nextPage}
+                    className="hidden min-[500px]:inline-flex h-10 w-10 items-center justify-center text-zinc-700 dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600"
+                    onClick={() => setStB(!showTopBar)}
+                >
+                    {headerPosition === 'top' && (
+                        <>
+                            {(showTopBar) ? <ChevronUp className="h-4 w-4 flex-none"/> :
+                                <ChevronDown className="h-4 w-4 flex-none"/>}
+                        </>
+                    )}
+                    {headerPosition === 'bottom' && (
+                        <>
+                            {(showTopBar) ? <ChevronDown className="h-4 w-4 flex-none"/> :
+                                <ChevronUp className="h-4 w-4 flex-none"/>}
+                        </>
+                    )}
+                    <span className={'hidden text-xs p-1'}>next page</span>
+                </button>
                 {tool === 'draw' && (
                     <>
                         <button
@@ -1261,13 +1293,19 @@ function App() {
             {/* Main Content Area */}
             <main
                 className="flex flex-1 flex-col h-full min-w-0 overflow-hidden bg-zinc-100 dark:bg-zinc-950 text-zinc-950 dark:text-zinc-100">
+                {isLoading ? (
+                    <div
+                        className="absolute inset-0 grid place-items-center bg-white/70 dark:bg-zinc-800/70 text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                        {t.loading}
+                    </div>
+                ) : null}
                 {headerPosition === 'top' && pdf && renderHeader('top')}
                 {headerPosition === 'top' && pdf && renderToolbar()}
                 {headerPosition === 'top' && pdf && renderBrushSettings()}
 
                 <section id={'main-sec'}
                          className="relative flex flex-1 overflow-auto px-3 py-4 bg-[#ddd] dark:bg-zinc-900">
-                    {!pdf ? (
+                    {!pdf && !isLoading ? (
                         <div
                             className="m-auto flex max-w-sm flex-col items-center gap-4 rounded-lg border border-dashed border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-8 text-center shadow-sm">
                             <NoPdf
@@ -1341,49 +1379,32 @@ function App() {
                             </div>
                             <p className="text-sm font-semibold tabular-nums text-zinc-950 dark:text-zinc-100">
                                 {/* @ts-ignore */}
-                                Last update: {__APP_VERSION__}
+                                Last
+                                update: {__APP_VERSION__}, {localDataSize === null ? '...' : formatBytes(localDataSize)}
                             </p>
                             <div className="mt-4 overflow-y-auto flex-1 pr-1 space-y-3">
-                                <div className="w-full max-w-sm">
-                                    <label htmlFor="theme"
-                                           className={`block text-sm font-medium ${resolvedTheme === 'dark' ? 'text-zinc-300' : 'text-zinc-700'} mb-1`}>
-                                        Theme
-                                    </label>
-                                    <select
-                                        id="theme"
-                                        value={theme}
-                                        onChange={(e: any) => setTheme1(e.target.value)}
-                                        className={`w-full h-10 px-3 rounded-md border ${resolvedTheme === 'dark' ? 'border-zinc-700 bg-zinc-800 text-zinc-100' : 'border-zinc-200 bg-white text-zinc-700'} text-xs font-bold shadow-sm focus:outline-none focus:ring-2 focus:ring-zinc-400 transition-all cursor-pointer`}
-                                    >
-                                        <option value="system">Auto (System)</option>
-                                        <option value="light">Light</option>
-                                        <option value="dark">Dark</option>
-                                    </select>
-                                </div>
-                                <div className="w-full max-w-sm">
-                                    <label htmlFor="language"
-                                           className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                                        Choose language
-                                    </label>
-                                    <select
-                                        id="language"
-                                        onChange={(e: any) => setLang(e.target.value)}
-                                        className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 text-xs font-bold text-zinc-700 dark:text-zinc-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:focus:ring-zinc-600 focus:border-zinc-400 dark:focus:border-zinc-600 transition-all cursor-pointer"
-                                    >
-                                        <option value="en">English (EN)</option>
-                                        <option value="ru">Russian (RU)</option>
-                                        <option value="th">Thai (TH)</option>
-                                        <option value="zh">Chinese (ZH)</option>
-                                    </select>
-                                </div>
-                                <div
-                                    className="rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 p-3">
-                                    <p className="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{t.localData}</p>
-                                    <p className="mt-1 text-2xl font-semibold tabular-nums text-zinc-950 dark:text-zinc-100">
-                                        {localDataSize === null ? '...' : formatBytes(localDataSize)}
-                                    </p>
-                                </div>
-
+                                <ThemeButtons
+                                    options={[
+                                        {value: 'system', label: 'Auto', icon: Monitor},
+                                        {value: 'light', label: 'Light', icon: Sun},
+                                        {value: 'dark', label: 'Dark', icon: Moon},
+                                    ]}
+                                    theme={theme}
+                                    setTheme={setTheme1}
+                                    resolvedTheme={resolvedTheme}
+                                />
+                                <ThemeButtons
+                                    options={[
+                                        {value: 'en', label: 'English', icon: Monitor},
+                                        {value: 'ru', label: 'Russian', icon: Monitor},
+                                        {value: 'th', label: 'Thai', icon: Monitor},
+                                        {value: 'zh', label: 'Chinese', icon: Monitor},
+                                    ]}
+                                    label={'Choose language'}
+                                    theme={lang}
+                                    setTheme={(t: string) => setLang(t as Lang)}
+                                    resolvedTheme={resolvedTheme}
+                                />
                                 <button
                                     type="button"
                                     className="inline-flex h-11 w-full items-center justify-center rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 px-4 text-sm font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 active:scale-95 transition-all disabled:text-zinc-500 dark:disabled:text-zinc-500 disabled:bg-white dark:disabled:bg-zinc-800 disabled:hover:bg-white dark:disabled:hover:bg-zinc-800"
