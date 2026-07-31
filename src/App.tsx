@@ -60,9 +60,11 @@ import {
     type Tool,
     ZOOM_STEP
 } from './utils.ts'
-import NoPdf from "./components/NoPdf.tsx";
 import {TRANSLATIONS} from './translations.ts'
+
+import NoPdf from "./components/NoPdf.tsx";
 import {ThemeButtons} from "./components/ThemeButtons.tsx";
+import {useOrientation} from "./hooks/useOrientation.ts";
 
 const Sidebar = lazy(() => import('./components/Sidebar.tsx'));
 
@@ -77,7 +79,8 @@ function App() {
     const pinchStateRef = useRef<PinchState | null>(null)
     const textDragRef = useRef<TextDragState | null>(null)
     const hasOpenedPdfRef = useRef(false)
-
+    const {isPortrait} = useOrientation();
+    console.log(`isPortrait = ${isPortrait}`)
     const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null)
     const [pdfName, setPdfName] = useState('')
     const [showTopBar, setStB] = useState(true)
@@ -1014,7 +1017,7 @@ function App() {
         }
     }
 
-    const renderHeader = (position: 'top' | 'bottom') => showTopBar && (
+    const renderHeader = (position: 'top' | 'bottom') => (showTopBar || isPortrait) && (
         <header
             className={`sticky ${position === 'top' ? 'top-0 border-b shadow-sm' : 'bottom-0 border-t shadow-[0_-1px_3px_rgba(0,0,0,0.05)]'} z-20 border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 px-3 py-2 backdrop-blur shrink-0`}>
             <div className="mx-auto flex max-w-5xl items-center gap-2">
@@ -1378,8 +1381,9 @@ function App() {
                                 </button>
                             </div>
                             <p className="text-sm font-semibold tabular-nums text-zinc-950 dark:text-zinc-100">
+                                Last
                                 {/* @ts-ignore */}
-                                Last update: {__APP_VERSION__}, {localDataSize === null ? '...' : formatBytes(localDataSize)}
+                                update: {__APP_VERSION__}, {localDataSize === null ? '...' : formatBytes(localDataSize)}
                             </p>
                             <div className="mt-4 overflow-y-auto flex-1 pr-1 space-y-3">
                                 <ThemeButtons
