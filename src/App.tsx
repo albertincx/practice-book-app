@@ -189,7 +189,7 @@ function App() {
     const [penWidth, setPenWidth] = useState(4)
     const [opacity, setOpacity] = useState(0.65)
     const [isPaintingEnabled, setIsPaintingEnabled] = useState(true)
-    const [isLoading, setIsLoading] = useState(true)
+    const [isLoading, setIsLoading] = useState(false)
     const [isSettingsOpen, setIsSettingsOpen] = useState(false)
     const [deviceScreenInfo, setDeviceScreenInfo] = useState<DeviceScreenInfo | null>(null)
     const [isFullscreen, setIsFullscreen] = useState(false)
