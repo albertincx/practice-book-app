@@ -1,19 +1,19 @@
 // components/Sidebar.tsx
 
-import type {PdfMetadata} from '../utils.ts';
-import {FileText, FileUp, FolderOpen, Trash2, X} from "lucide-react";
-
-interface SidebarProps {
-    isOpen: boolean;
-    setIsOpen: (open: boolean) => void;
-    t: any; // объект переводов
-    pdfList: PdfMetadata[];
-    activePdfId: string | null;
-    loadPdf: (file: File) => void;
-    loadPdfFromUrl: (url: string, fileName?: string) => void;
-    loadPdfFromLibrary: (id: string) => void;
-    handleDeletePdf: (id: string, event: React.MouseEvent) => void;
-}
+// import type {PdfMetadata} from '../utils.ts';
+import {Download, FileText, FileUp, FolderOpen, Trash2, Upload, X} from "lucide-react";
+//
+// interface SidebarProps {
+//     isOpen: boolean;
+//     setIsOpen: (open: boolean) => void;
+//     t: any; // объект переводов
+//     pdfList: PdfMetadata[];
+//     activePdfId: string | null;
+//     loadPdf: (file: File) => void;
+//     loadPdfFromUrl: (url: string, fileName?: string) => void;
+//     loadPdfFromLibrary: (id: string) => void;
+//     handleDeletePdf: (id: string, event: React.MouseEvent) => void;
+// }
 
 export default function Sidebar({
                                     isOpen: isSidebarOpen,
@@ -25,7 +25,9 @@ export default function Sidebar({
                                     // loadPdfFromUrl,
                                     loadPdfFromLibrary,
                                     handleDeletePdf,
-                                }: SidebarProps) {
+                                    handleExportChanges,
+                                    handleImportChanges,
+                                }: any) {
     return (
         <>
             {isSidebarOpen && (
@@ -86,7 +88,7 @@ export default function Sidebar({
                             <p className="text-[10px] mt-1">{t.emptyLibrarySub}</p>
                         </div>
                     ) : (
-                        pdfList.map((item) => {
+                        pdfList.map((item: any) => {
                             const isActive = item.id === activePdfId
                             return (
                                 <div
@@ -126,6 +128,28 @@ export default function Sidebar({
                         })
                     )}
                 </div>
+                {/* Кнопка сохранения изменений */}
+                <button
+                    type="button"
+                    onClick={handleExportChanges}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                >
+                    <Download className="h-4 w-4"/>
+                    <span>Сохранить изменения (JSON)</span>
+                </button>
+
+                {/* Кнопка загрузки изменений */}
+                <label
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer">
+                    <Upload className="h-4 w-4"/>
+                    <span>Загрузить изменения</span>
+                    <input
+                        type="file"
+                        accept=".json"
+                        className="hidden"
+                        onChange={handleImportChanges}
+                    />
+                </label>
             </aside>
         </>
     );

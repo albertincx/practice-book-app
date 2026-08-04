@@ -326,6 +326,64 @@ function App() {
         });
     };
 
+    const handleExportChanges = () => {
+        if (!activePdfId) return;
+        const dataToSave = {
+            version: 1,
+            strokes,
+            texts,
+            pdfName
+        };
+        const blob = new Blob([JSON.stringify(dataToSave, null, 2)], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${pdfName || 'document'}-annotations.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+    };
+
+    const handleImportChanges = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const content = e.target?.result as string;
+                const parsed = JSON.parse(content);
+
+                if (parsed.strokes && Array.isArray(parsed.strokes)) {
+                    setStrokes(parsed.strokes);
+                }
+                if (parsed.texts && Array.isArray(parsed.texts)) {
+                    setTexts(parsed.texts);
+                }
+                setShowToast('Изменения успешно загружены!');
+            } catch (err) {
+                setError('Ошибка при чтении файла изменений.');
+            }
+        };
+        reader.readAsText(file);
+        // Сбрасываем значение инпута, чтобы можно было загрузить тот же файл повторно
+        event.target.value = '';
+    };
+    const handleRenamePdf = async () => {
+        if (!activePdfId) return;
+        const newName = window.prompt(t.renamePrompt || "Введите новое название книги:", pdfName);
+        if (!newName || !newName.trim()) return;
+
+        const trimmed = newName.trim();
+        try {
+            // @ts-ignore
+            await mergePdfMetadata(activePdfId, {name: trimmed});
+            setPdfName(trimmed);
+            await refreshPdfList();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to rename PDF.');
+        }
+    };
+
     const handleDownload = async () => {
         const blob = await getMergedBlob();
         if (!blob) return;
@@ -1061,9 +1119,13 @@ function App() {
 
                 <div className="pdf-name-div min-w-0 flex-1 flex justify-between">
                     <div className="pdf-name-div min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium dark:text-zinc-100" onClick={
+                        <p className="hidden truncate text-sm font-medium dark:text-zinc-100" onClick={
                             () => setShowToast(pdfName)
                         }>{pdfName || t.emptyHeader}</p>
+                        <p className="truncate text-sm font-medium dark:text-zinc-100 cursor-pointer hover:underline"
+                           onClick={handleRenamePdf} title="Кликните, чтобы переименовать">
+                            {pdfName || t.emptyHeader}
+                        </p>
                         <p className="text-xs text-zinc-500 dark:text-zinc-400">
                             {pdf ? `${t.savedLocally} - ${pdf.numPages} ${t.pages}` : t.selectOrUpload}
                         </p>
@@ -1318,6 +1380,8 @@ function App() {
                         loadPdfFromUrl={loadPdfFromUrl}
                         loadPdfFromLibrary={loadPdfFromLibrary}
                         handleDeletePdf={handleDeletePdf}
+                        handleExportChanges={handleExportChanges}
+                        handleImportChanges={handleImportChanges}
                     />
                 </Suspense>
             )}
@@ -1411,7 +1475,7 @@ function App() {
                             </div>
                             {/* @ts-ignore */}
                             <p
-                               className="text-sm font-semibold tabular-nums text-zinc-950 dark:text-zinc-100">
+                                className="text-sm font-semibold tabular-nums text-zinc-950 dark:text-zinc-100">
                                 Last
                                 {/* @ts-ignore */}
                                 update: {__APP_VERSION__}, {localDataSize === null ? '...' : formatBytes(localDataSize)}
