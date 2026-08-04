@@ -81,7 +81,7 @@ function App() {
     const textDragRef = useRef<TextDragState | null>(null)
     const hasOpenedPdfRef = useRef(false)
     const {isPortrait} = useOrientation();
-    console.log(`isPortrait = ${isPortrait}`)
+
     const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null)
     const [pdfName, setPdfName] = useState('')
     const [showTopBar, setStB] = useState(true)
@@ -189,7 +189,7 @@ function App() {
     const [penWidth, setPenWidth] = useState(4)
     const [opacity, setOpacity] = useState(0.65)
     const [isPaintingEnabled, setIsPaintingEnabled] = useState(true)
-    const [isLoading, setIsLoading] = useState(false)
+    const [isLoading, setIsLoading] = useState(true)
     const [isSettingsOpen, setIsSettingsOpen] = useState(false)
     const [deviceScreenInfo, setDeviceScreenInfo] = useState<DeviceScreenInfo | null>(null)
     const [isFullscreen, setIsFullscreen] = useState(false)
@@ -250,6 +250,8 @@ function App() {
         // console.log('a')
         childElement.scrollTo({top: 0, left: 0, behavior: 'auto'})
     }, [activePdfId, pdfName, pdf, pageNumber])
+
+    console.log(`isPortrait = ${isPortrait} ${error}`)
 
     useEffect(() => {
         if (!isSettingsOpen) {
@@ -438,7 +440,7 @@ function App() {
 
         const initApp = async () => {
             if (!('indexedDB' in window)) {
-                // setIsLoading(false)
+                setIsLoading(false)
                 return
             }
 
@@ -452,8 +454,9 @@ function App() {
 
                 const list = await getAllPdfMetadata()
                 if (isCancelled) {
-                    // await timeout(5)
-                    if (list) setIsLoading(false)
+                    if (list) {
+                        setIsLoading(false)
+                    }
                     return
                 }
                 setPdfList(list)
@@ -512,12 +515,12 @@ function App() {
 
     useEffect(() => {
         if (!pdf) {
+            setIsLoading(false)
             return
         }
 
         let isCancelled = false
         const renderPage = async () => {
-            setIsLoading(true)
             setError('')
 
             try {
@@ -534,6 +537,7 @@ function App() {
                 if (!canvas || !context) {
                     return
                 }
+                setIsLoading(true)
 
                 const ratio = window.devicePixelRatio || 1
                 canvas.width = Math.floor(viewport.width * ratio)
@@ -615,6 +619,7 @@ function App() {
             zoom?: number
         },
     ) => {
+        console.log('openPdfData')
         setIsLoading(true)
         setError('')
         cancelActiveStroke()
@@ -698,7 +703,9 @@ function App() {
     }
 
     const updatePinchState = () => {
-        if (!isPinchZoomEnabled) return
+        if (!isPinchZoomEnabled) {
+            return
+        }
 
         const positions = [...pointersRef.current.values()]
         if (positions.length < 2) {
@@ -718,6 +725,7 @@ function App() {
         }
 
         // Считаем коэффициент изменения относительно ПРОШЛОГО кадра, а не старта
+        // @ts-ignore
         const scaleFactor = distance / pinchStateRef.current.distance
         const nextZoom = zoom * scaleFactor // Используем текущий актуальный state/переменную зума
 
@@ -1401,10 +1409,14 @@ function App() {
                                     <X className="h-4 w-4"/>
                                 </button>
                             </div>
-                            <p className="text-sm font-semibold tabular-nums text-zinc-950 dark:text-zinc-100">
+                            {/* @ts-ignore */}
+                            <p
+                               className="text-sm font-semibold tabular-nums text-zinc-950 dark:text-zinc-100">
                                 Last
                                 {/* @ts-ignore */}
                                 update: {__APP_VERSION__}, {localDataSize === null ? '...' : formatBytes(localDataSize)}
+                                {/* @ts-ignore */}
+                                mode = {__MODE__}
                             </p>
                             <div className="mt-4 overflow-y-auto flex-1 pr-1 space-y-3">
                                 <ThemeButtons
