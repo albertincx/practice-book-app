@@ -38,6 +38,7 @@ import {
     findTextAtPoint,
     formatBytes,
     formatZoom,
+    generateId,
     getAllPdfMetadata,
     getLibraryTotalSize,
     getPdfFile,
@@ -656,7 +657,7 @@ function App() {
             }
 
             const data = await response.arrayBuffer()
-            const nextId = crypto.randomUUID()
+            const nextId = generateId()
 
             // Fallback filename extracted from URL if not provided
             const name = fileName || url.split('/').pop()?.split('?')[0] || 'document.pdf'
@@ -672,7 +673,7 @@ function App() {
     const loadPdf = async (file: File) => {
         try {
             const data = await file.arrayBuffer()
-            const nextId = crypto.randomUUID()
+            const nextId = generateId()
             await savePdfToLibrary(nextId, file.name, data)
             await refreshPdfList()
             await loadPdfFromLibrary(nextId)
@@ -784,7 +785,7 @@ function App() {
 
         const stroke: Stroke = {
             createdAt: Date.now(),
-            id: crypto.randomUUID(),
+            id: generateId(),
             page: pageNumber,
             color: penColor,
             opacity,
@@ -963,7 +964,7 @@ function App() {
             {
                 color: penColor,
                 createdAt: Date.now(),
-                id: crypto.randomUUID(),
+                id: generateId(),
                 opacity,
                 page: pageNumber,
                 size: Math.max(12, penWidth * 4),

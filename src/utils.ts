@@ -207,6 +207,17 @@ export function openPdfStore() {
     })
 }
 
+export const generateId = () => {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return crypto.randomUUID();
+    }
+    // Fallback for older browsers or HTTP mobile testing
+    // @ts-ignore
+    return '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, c =>
+    // @ts-ignore
+        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+    );
+};
 
 export async  function migrateDatabaseIfNeeded(): Promise<string | null> {
     if (!('indexedDB' in window)) {
@@ -231,7 +242,7 @@ export async  function migrateDatabaseIfNeeded(): Promise<string | null> {
         return null
     }
 
-    const newId = crypto.randomUUID()
+    const newId = generateId()
     const now = Date.now()
 
     const data = lastOpened.data as ArrayBuffer
