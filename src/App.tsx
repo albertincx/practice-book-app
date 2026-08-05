@@ -90,7 +90,9 @@ function App() {
     const [pageInput, setPageInput] = useState('1')
     const [pageSize, setPageSize] = useState<PageSize | null>(null)
     const [zoom, setZoom] = useState(1)
-
+// В состояние компонента App добавляем счетчик для цифр
+    const [nextNumber, setNextNumber] = useState(1);
+    const [showNumberingTip, setShowNumberingTip] = useState<boolean>(false);
     const [theme, setTheme] = useState<'system' | 'light' | 'dark'>(() => {
         const saved = localStorage.getItem('pdf-theme')
         return (saved === 'light' || saved === 'dark' || saved === 'system') ? saved : 'system'
@@ -103,6 +105,22 @@ function App() {
         // @ts-ignore
         setTheme(te)
     }
+
+    const toggleNumberingTool = () => {
+        if (tool === 'numbering') {
+            changeTool('move');
+        } else {
+            changeTool('numbering');
+            // Если подсказка еще не показывалась, отображаем её
+            if (localStorage.getItem('pdf-numbering-tip-shown') !== 'true') {
+                setShowNumberingTip(true);
+            }
+        }
+    };
+    const closeNumberingTip = () => {
+        setShowNumberingTip(false);
+        localStorage.setItem('pdf-numbering-tip-shown', 'true');
+    };
 
     useEffect(() => {
         // 1. Создаем медиа-запрос для проверки системной темы
@@ -251,7 +269,7 @@ function App() {
         childElement.scrollTo({top: 0, left: 0, behavior: 'auto'})
     }, [activePdfId, pdfName, pdf, pageNumber])
 
-    console.log(`isPortrait = ${isPortrait} ${error}`)
+    console.log(`isPortrait = ${isPortrait} ${error} ${tool}`)
 
     useEffect(() => {
         if (!isSettingsOpen) {
@@ -807,6 +825,34 @@ function App() {
     }
 
     const handlePointerDown = (event: PointerEvent<HTMLCanvasElement>) => {
+        // Внутри handlePointerDown (когда tool === 'numbering')
+        console.log('aaa', tool)
+        if (tool === 'numbering') {
+            console.log('aaa')
+            const point = getInkPoint(event);
+            if (!point) return;
+
+            // Добавляем текущую цифру как текстовую аннотацию
+            setTexts((current) => [
+                ...current,
+                {
+                    color: penColor,
+                    createdAt: Date.now(),
+                    id: generateId(),
+                    opacity,
+                    page: pageNumber,
+                    size: Math.max(16, penWidth * 5), // делаем цифру чуть заметнее
+                    text: String(nextNumber),
+                    x: point.x,
+                    y: point.y,
+                },
+            ]);
+
+            // Увеличиваем счетчик на 1 для следующего тапа
+            setNextNumber((prev) => prev + 1);
+            return;
+        }
+
         if (tool !== 'draw' || !pageSize) {
             return
         }
@@ -999,6 +1045,7 @@ function App() {
         pinchStateRef.current = null
         textDragRef.current = null
         setTool(nextTool)
+        setNextNumber(1)
         localStorage.setItem('pdf-tool', nextTool)
     }
 
@@ -1191,6 +1238,19 @@ function App() {
                     >
                         <Hand className="h-4 w-4"/>
                     </button>
+                    <button
+                        type="button"
+                        aria-label="Numbering tool"
+                        className={`inline-flex h-9 px-3 items-center justify-center gap-1.5 rounded text-xs font-medium transition-colors ${
+                            tool === 'numbering'
+                                ? 'bg-white dark:bg-zinc-700 text-zinc-950 dark:text-zinc-100 shadow-sm'
+                                : 'text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50'
+                        }`}
+                        onClick={toggleNumberingTool}
+                    >
+                        <Hash className="h-4 w-4"/>
+                        <span>{nextNumber}</span>
+                    </button>
                 </div>
                 <button
                     type="button"
@@ -1269,7 +1329,7 @@ function App() {
                     )}
                     <span className={'hidden text-xs p-1'}>next page</span>
                 </button>
-                {tool === 'draw' && (
+                {pEvents && (
                     <>
                         <button
                             type="button"
@@ -1354,6 +1414,9 @@ function App() {
             </section>
         )
     }
+    let pEvents = ['draw', 'numbering'].includes(tool)
+    let touchAction = {touchAction: !['draw', 'numbering'].includes(tool) ? 'none' : 'auto'}
+    console.log(touchAction)
 
     return (
         <div
@@ -1422,8 +1485,8 @@ function App() {
                                 <canvas ref={pdfCanvasRef} className="absolute inset-0"/>
                                 <canvas
                                     ref={inkCanvasRef}
-                                    className={`absolute inset-0 ${tool === 'draw' ? 'cursor-crosshair' : 'pointer-events-none'}`}
-                                    style={{touchAction: tool === 'draw' ? 'none' : 'auto'}}
+                                    className={`absolute inset-0 ${pEvents ? 'cursor-crosshair' : 'pointer-events-none'}`}
+                                    style={touchAction}
                                     onPointerDown={handlePointerDown}
                                     onPointerMove={handlePointerMove}
                                     onPointerUp={finishStroke}
@@ -1671,7 +1734,10 @@ function App() {
 
                             <textarea
                                 autoFocus
-                                className="mt-4 min-h-28 w-full resize-none rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 text-zinc-950 dark:text-zinc-100 p-3 text-base outline-none focus:border-zinc-950 dark:focus:border-zinc-100"
+                                className="mt-4 min-h-28 w-full resize-none rounded-md border border-zinc-200
+                                dark:border-zinc-800 bg-white dark:bg-zinc-800 text-zinc-950
+                                dark:text-zinc-100 p-3 text-base outline-none focus:border-zinc-950
+                                dark:focus:border-zinc-100"
                                 value={textDraft}
                                 onChange={(event) => setTextDraft(event.target.value)}
                             />
@@ -1679,14 +1745,18 @@ function App() {
                             <div className="mt-4 flex gap-2">
                                 <button
                                     type="button"
-                                    className="inline-flex h-11 flex-1 items-center justify-center rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 px-4 text-sm font-medium text-zinc-700 dark:text-zinc-200"
+                                    className="inline-flex h-11 flex-1 items-center justify-center rounded-md
+                                    border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800
+                                    px-4 text-sm font-medium text-zinc-700 dark:text-zinc-200"
                                     onClick={() => setIsTextDialogOpen(false)}
                                 >
                                     {t.cancel}
                                 </button>
                                 <button
                                     type="button"
-                                    className="inline-flex h-11 flex-1 items-center justify-center rounded-md bg-zinc-950 dark:bg-zinc-100 px-4 text-sm font-medium text-white dark:text-zinc-900"
+                                    className="inline-flex h-11 flex-1 items-center justify-center rounded-md
+                                    bg-zinc-950 dark:bg-zinc-100 px-4 text-sm font-medium text-white
+                                    dark:text-zinc-900"
                                     onClick={armTextPlacement}
                                 >
                                     {t.ok}
@@ -1705,16 +1775,50 @@ function App() {
             )}
             {pdf && (
                 <div
-                    className={`rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 fixed p-2_  bottom-2 right-2 ${tool === 'draw' ? '' : ''}`}
+                    className={`rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-100 
+                    dark:bg-zinc-900 fixed p-2_  bottom-2 right-2 ${tool === 'draw' ? '' : ''}`}
                 >
                     <button
                         type="button"
                         aria-label={t.moveMode}
-                        className={`inline-flex h-9 w-10 items-center justify-center rounded ${tool === 'move' ? 'bg-white dark:bg-zinc-800 text-zinc-950 dark:text-zinc-100 shadow-sm' : 'text-zinc-500 dark:text-zinc-400'}`}
+                        className={`inline-flex h-9 w-10 items-center justify-center rounded 
+                        ${tool === 'move' ? 'bg-white dark:bg-zinc-800 text-zinc-950 ' +
+                            'dark:text-zinc-100 shadow-sm' : 'text-zinc-500 dark:text-zinc-400'}`}
                         onClick={() => changeTool(tool === 'move' ? 'draw' : 'move')}
                     >
                         {tool === 'move' ? <Brush className="h-4 w-4"/> : <Hand className="h-4 w-4"/>}
                     </button>
+                </div>
+            )}
+            {showNumberingTip && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+                    <div
+                        className="w-full max-w-sm rounded-lg bg-white dark:bg-zinc-900 p-5 shadow-2xl
+                        ring-1 ring-zinc-200 dark:ring-zinc-800 text-center space-y-4 animate-in fade-in zoom-in-95">
+                        <h3 className="text-base font-semibold text-zinc-950 dark:text-zinc-100">
+                            Numbering tool
+                        </h3>
+                        <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                            Tap anywhere on the document to place sequential numbers. Click the tool again to finish and
+                            return to the hand tool.
+                        </p>
+                        <video
+                            src="numbering.mp4"
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            className="w-full h-full object-cover"
+                        />
+                        <button
+                            type="button"
+                            className="w-full h-10 rounded-md bg-zinc-950 dark:bg-zinc-100 text-white
+                            dark:text-zinc-900 text-sm font-medium transition-transform active:scale-95"
+                            onClick={closeNumberingTip}
+                        >
+                            Close tip
+                        </button>
+                    </div>
                 </div>
             )}
         </div>

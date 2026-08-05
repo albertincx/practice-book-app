@@ -135,14 +135,14 @@ export default function Sidebar({
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
                 >
                     <Download className="h-4 w-4"/>
-                    <span>Сохранить изменения (JSON)</span>
+                    <span>Save changes (JSON)</span>
                 </button>
 
                 {/* Кнопка загрузки изменений */}
                 <label
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer">
                     <Upload className="h-4 w-4"/>
-                    <span>Загрузить изменения</span>
+                    <span>Load changes</span>
                     <input
                         type="file"
                         accept=".json"

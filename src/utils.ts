@@ -1,5 +1,5 @@
 
-export type Tool = 'draw' | 'move'
+export type Tool = 'draw' | 'move' | 'numbering'
 
 export type StrokePoint = {
     x: number
