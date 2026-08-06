@@ -1216,7 +1216,7 @@ function App() {
                             {pdfName || t.emptyHeader}
                         </p>
                         <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                            {pdf ? `${t.savedLocally} - ${pdf.numPages} ${t.pages}` : t.selectOrUpload}
+                            {pdf ? `${t.savedLocally} - ${pdf.numPages} ${t.pages}` : t.selectOrUpload} zoom {formatZoom(zoom)}
                         </p>
                     </div>
                 </div>
@@ -1303,7 +1303,7 @@ function App() {
                         <Hash className="h-4 w-4"/>
                         <span>{nextNumber}</span>
                     </button>
-                    {isPortrait && (
+                    {!isPortrait && (
                         <button
                             type="button"
                             aria-label="Numbering tool"
@@ -1335,27 +1335,23 @@ function App() {
                 </button>
 
                 <div
-                    className="flex items-center rounded-md border border-zinc-200 dark:border-zinc-800
-                    bg-white dark:bg-zinc-800">
+                    className="relative flex items-center rounded-md border border-zinc-200 dark:border-zinc-800
+    bg-white dark:bg-zinc-800 overflow-hidden">
                     <button
                         type="button"
                         aria-label={t.zoomOut}
-                        className="inline-flex h-10 w-10 items-center justify-center text-zinc-700
-                        dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600"
+                        className="relative z-10 inline-flex h-10 w-10 items-center justify-center text-zinc-700
+        dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600"
                         disabled={!pdf || zoom <= MIN_ZOOM}
                         onClick={() => updateZoom(zoom - ZOOM_STEP)}
                     >
                         <Minus className="h-4 w-4"/>
                     </button>
-                    <span
-                        className="w-9 text-center text-sm font-medium tabular-nums dark:text-zinc-100">
-                        {formatZoom(zoom)}
-                    </span>
                     <button
                         type="button"
                         aria-label={t.zoomIn}
-                        className="inline-flex h-10 w-10 items-center justify-center text-zinc-700
-                        dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600"
+                        className="relative z-10 inline-flex h-10 w-10 items-center justify-center text-zinc-700
+        dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600"
                         disabled={!pdf || zoom >= MAX_ZOOM}
                         onClick={() => updateZoom(zoom + ZOOM_STEP)}
                     >
@@ -1374,7 +1370,6 @@ function App() {
                         disabled={!pdf || pageNumber <= 1}
                         onClick={() => setPageNumber((current) => current - 1)}
                     >
-                        <span className={'hidden text-xs p-1'}>prev page</span>
                         <ChevronLeft className="h-4 w-4 min-w-[16px]"/>
                     </button>
                     <button
@@ -1386,7 +1381,6 @@ function App() {
                         onClick={() => setPageNumber((current) => current + 1)}
                     >
                         <ChevronRight className="h-4 w-4 flex-none"/>
-                        <span className={'hidden text-xs p-1'}>next page</span>
                     </button>
                 </div>
                 <button
@@ -1408,7 +1402,6 @@ function App() {
                                 <ChevronUp className="h-4 w-4 flex-none"/>}
                         </>
                     )}
-                    <span className={'hidden text-xs p-1'}>next page</span>
                 </button>
                 {pEvents && (
                     <>
