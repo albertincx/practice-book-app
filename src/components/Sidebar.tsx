@@ -27,7 +27,9 @@ export default function Sidebar({
                                     handleDeletePdf,
                                     handleExportChanges,
                                     handleImportChanges,
+                                    setIsGalleryOpen,
                                 }: any) {
+    let galleryImages = []
     return (
         <>
             {isSidebarOpen && (
@@ -44,6 +46,7 @@ export default function Sidebar({
           ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:w-0 lg:-translate-x-full lg:border-r-0'}
         `}
             >
+
                 <div
                     className="flex h-[57px] items-center justify-between border-b border-zinc-200 dark:border-zinc-800 px-4 shrink-0">
                     <div className="flex items-center gap-2 font-semibold text-zinc-800 dark:text-zinc-200">
@@ -60,6 +63,19 @@ export default function Sidebar({
                     </button>
                 </div>
 
+                <button
+                    type="button"
+                    className="relative inline-flex h-10 px-3 items-center justify-center gap-1.5 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 text-xs font-medium hover:bg-zinc-50 dark:hover:bg-zinc-700"
+                    onClick={() => setIsGalleryOpen(true)}
+                >
+                    <span>Gallery</span>
+                    {galleryImages.length > 0 && (
+                        <span
+                            className="flex h-5 w-5 items-center justify-center rounded-full bg-zinc-950 dark:bg-zinc-100 text-[10px] text-white dark:text-zinc-900 font-bold">
+                            {galleryImages.length}
+                        </span>
+                    )}
+                </button>
                 <div className="p-3 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
                     <label
                         className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-zinc-950 dark:bg-zinc-100 py-2.5 px-4 text-sm font-medium text-white dark:text-zinc-950 shadow hover:bg-zinc-800 dark:hover:bg-zinc-200 active:scale-95 transition-all">

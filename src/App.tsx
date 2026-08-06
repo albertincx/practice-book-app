@@ -7,6 +7,7 @@ import {
     ChevronUp,
     Download,
     Eraser,
+    FullscreenIcon,
     Hand,
     Hash,
     Heart,
@@ -95,6 +96,18 @@ function App() {
 // В состояние компонента App добавляем счетчик для цифр
     const [nextNumber, setNextNumber] = useState(1);
     const [showNumberingTip, setShowNumberingTip] = useState<boolean>(false);
+
+    const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+// Состояние для внутренней галереи снимков
+    const [galleryImages, setGalleryImages] = useState<string[]>(() => {
+        try {
+            const saved = localStorage.getItem('pdf-gallery-images');
+            return saved ? JSON.parse(saved) : [];
+        } catch {
+            return [];
+        }
+    });
+
     const [theme, setTheme] = useState<'system' | 'light' | 'dark'>(() => {
         const saved = localStorage.getItem('pdf-theme')
         return (saved === 'light' || saved === 'dark' || saved === 'system') ? saved : 'system'
@@ -123,6 +136,14 @@ function App() {
         setShowNumberingTip(false);
         localStorage.setItem('pdf-numbering-tip-shown', 'true');
     };
+// Сохранение в localStorage при каждом изменении галереи
+    useEffect(() => {
+        try {
+            localStorage.setItem('pdf-gallery-images', JSON.stringify(galleryImages));
+        } catch (e) {
+            console.error("Не удалось сохранить галерею в localStorage", e);
+        }
+    }, [galleryImages]);
 
     useEffect(() => {
         // 1. Создаем медиа-запрос для проверки системной темы
@@ -410,6 +431,19 @@ function App() {
 
         // @ts-ignore
         const url = URL.createObjectURL(blob);
+
+        // Добавляем снимок во внутреннюю галерею
+        // setGalleryImages((prev) => [url, ...prev]);
+// Конвертируем Blob в Base64 для сохранения в localStorage
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const base64data = reader.result as string;
+            if (base64data) {
+                setGalleryImages((prev) => [base64data, ...prev]);
+            }
+        };
+        // @ts-ignore
+        reader.readAsDataURL(blob);
         const link = document.createElement('a');
         link.download = `merged-canvas${pageNumber}.jpg`;
         link.href = url;
@@ -1035,6 +1069,7 @@ function App() {
         setPageSize(null)
         setActivePdfId(null)
         setPdfList([])
+        setGalleryImages([])
         await clearAllLocalData()
         setLocalDataSize(0)
         setIsSettingsOpen(false)
@@ -1187,7 +1222,8 @@ function App() {
                 </div>
                 <div className="cursor-pointer text-zinc-700 dark:text-zinc-200 hover:opacity-80"
                      onClick={handleDownload}><Download/></div>
-                {/*<div onClick={downPage}><Share/></div>*/}
+
+                {/* Кнопка открытия галереи снимков */}
                 <form
                     className="pageinfo-div flex h-10 items-center gap-1 rounded-md border border-zinc-200
                     dark:border-zinc-800 bg-white dark:bg-zinc-800 px-2"
@@ -1267,6 +1303,23 @@ function App() {
                         <Hash className="h-4 w-4"/>
                         <span>{nextNumber}</span>
                     </button>
+                    {isPortrait && (
+                        <button
+                            type="button"
+                            aria-label="Numbering tool"
+                            className={`inline-flex h-9 px-3 items-center justify-center gap-1.5 rounded text-xs 
+                        font-medium transition-colors ${
+                                tool === 'numbering'
+                                    ? 'bg-white dark:bg-zinc-700 text-zinc-950 dark:text-zinc-100 shadow-sm'
+                                    : 'text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50'
+                            }`}
+                            disabled={!fullscreenSupported}
+                            onClick={() => void openToFullscreen()}
+                        >
+                            <FullscreenIcon/>
+                        </button>
+                    )}
+
                 </div>
                 <button
                     type="button"
@@ -1488,6 +1541,7 @@ function App() {
                         handleDeletePdf={handleDeletePdf}
                         handleExportChanges={handleExportChanges}
                         handleImportChanges={handleImportChanges}
+                        setIsGalleryOpen={setIsGalleryOpen}
                     />
                 </Suspense>
             )}
@@ -1573,6 +1627,65 @@ function App() {
                 {headerPosition === 'bottom' && renderBrushSettings()}
                 {headerPosition === 'bottom' && renderToolbar()}
                 {headerPosition === 'bottom' && renderHeader('bottom')}
+
+                {/* Модальное окно внутренней галереи */}
+                {isGalleryOpen && (
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                        <div
+                            className="w-full max-w-3xl rounded-xl bg-white dark:bg-zinc-900 p-5 shadow-2xl ring-1 ring-zinc-200 dark:ring-zinc-800 flex flex-col max-h-[85vh]">
+                            <div
+                                className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
+                                <h2 className="text-base font-semibold dark:text-zinc-100">Внутренняя галерея снимков
+                                    ({galleryImages.length})</h2>
+                                <button
+                                    type="button"
+                                    className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                                    onClick={() => setIsGalleryOpen(false)}
+                                >
+                                    <X className="h-4 w-4"/>
+                                </button>
+                            </div>
+
+                            <div className="mt-4 overflow-y-auto flex-1 grid grid-cols-2 sm:grid-cols-3 gap-3 pr-1">
+                                {galleryImages.length === 0 ? (
+                                    <div
+                                        className="col-span-full py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                                        Здесь пока нет снимков. Нажимайте кнопку скачивания, чтобы они добавлялись сюда.
+                                    </div>
+                                ) : (
+                                    galleryImages.map((src, index) => (
+                                        <div key={index}
+                                             className="relative group rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800 aspect-[3/4]">
+                                            <img src={src} alt={`Снимок ${index + 1}`}
+                                                 className="w-full h-full object-cover"/>
+                                            <div
+                                                className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                                <a
+                                                    href={src}
+                                                    download={`snapshot-${index + 1}.jpg`}
+                                                    className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-zinc-900 shadow hover:bg-zinc-100 transition-transform active:scale-95"
+                                                    title="Скачать"
+                                                >
+                                                    <Download className="h-4 w-4"/>
+                                                </a>
+                                                <button
+                                                    type="button"
+                                                    className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-red-600 text-white shadow hover:bg-red-700 transition-transform active:scale-95"
+                                                    onClick={() => setGalleryImages((prev) => prev.filter((_, i) => i !== index))}
+                                                    title="Удалить"
+                                                >
+                                                    <Trash2 className="h-4 w-4"/>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {isSettingsOpen ? (
                     <div
                         className="fixed inset-0 z-40 flex items-end bg-black/30 dark:bg-black/60 p-3
