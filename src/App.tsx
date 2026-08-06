@@ -63,11 +63,13 @@ import {
 } from './utils.ts'
 import {TRANSLATIONS} from './translations.ts'
 
-import NoPdf from "./components/NoPdf.tsx";
-import {ThemeButtons} from "./components/ThemeButtons.tsx";
 import {useOrientation} from "./hooks/useOrientation.ts";
 
-const Sidebar = lazy(() => import('./components/Sidebar.tsx'));
+import NoPdf from "./components/NoPdf.tsx";
+import {ThemeButtons} from "./components/ThemeButtons.tsx";
+
+const Sidebar = lazy(() =>
+    import('./components/Sidebar.tsx'));
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker
 
@@ -1120,7 +1122,8 @@ function App() {
     const deviceScreenInfoText = deviceScreenInfo
         ? [
             `Viewport: ${deviceScreenInfo.viewportWidth}×${deviceScreenInfo.viewportHeight}`,
-            `Screen: ${deviceScreenInfo.screenWidth}×${deviceScreenInfo.screenHeight} (avail ${deviceScreenInfo.availWidth}×${deviceScreenInfo.availHeight})`,
+            `Screen: ${deviceScreenInfo.screenWidth}×${deviceScreenInfo.screenHeight} (avail ${
+                deviceScreenInfo.availWidth}×${deviceScreenInfo.availHeight})`,
             `Outer: ${deviceScreenInfo.outerWidth}×${deviceScreenInfo.outerHeight}`,
             `DPR: ${deviceScreenInfo.devicePixelRatio}`,
             `Color depth: ${deviceScreenInfo.colorDepth ?? '—'} | Pixel depth: ${deviceScreenInfo.pixelDepth ?? '—'}`,
@@ -1153,12 +1156,16 @@ function App() {
 
     const renderHeader = (position: 'top' | 'bottom') => (showTopBar || isPortrait) && (
         <header
-            className={`sticky ${position === 'top' ? 'top-0 border-b shadow-sm' : 'bottom-0 border-t shadow-[0_-1px_3px_rgba(0,0,0,0.05)]'} z-20 border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 px-3 py-2 backdrop-blur shrink-0`}>
+            className={`sticky ${position === 'top' ? 'top-0 border-b shadow-sm' :
+                'bottom-0 border-t shadow-[0_-1px_3px_rgba(0,0,0,0.05)]'} z-20 border-zinc-200 
+                dark:border-zinc-800 bg-white/95 dark:bg-zinc-900/95 px-3 py-2 backdrop-blur shrink-0`}>
             <div className="mx-auto flex max-w-5xl items-center gap-2">
                 <button
                     aria-label="Toggle sidebar"
                     type="button"
-                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 active:scale-95 transition-all"
+                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border
+                    border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 text-zinc-700
+                    dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 active:scale-95 transition-all"
                     onClick={() => setIsSidebarOpen((prev) => !prev)}
                 >
                     <Menu className="h-5 w-5"/>
@@ -1182,7 +1189,8 @@ function App() {
                      onClick={handleDownload}><Download/></div>
                 {/*<div onClick={downPage}><Share/></div>*/}
                 <form
-                    className="pageinfo-div flex h-10 items-center gap-1 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 px-2"
+                    className="pageinfo-div flex h-10 items-center gap-1 rounded-md border border-zinc-200
+                    dark:border-zinc-800 bg-white dark:bg-zinc-800 px-2"
                     onSubmit={(event) => {
                         event.preventDefault()
                         goToPage()
@@ -1191,7 +1199,8 @@ function App() {
                     <Hash className="h-4 w-4 text-zinc-500 dark:text-zinc-400"/>
                     <input
                         aria-label={t.goToPage}
-                        className="h-8 w-14 bg-transparent text-center text-sm font-medium tabular-nums text-zinc-950 dark:text-zinc-100 outline-none"
+                        className="h-8 w-14 bg-transparent text-center text-sm font-medium tabular-nums
+                        text-zinc-950 dark:text-zinc-100 outline-none"
                         disabled={!pdf}
                         inputMode="numeric"
                         min="1"
@@ -1207,7 +1216,9 @@ function App() {
                 <button
                     type="button"
                     aria-label={t.settings}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 active:scale-95"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-200
+                    dark:border-zinc-800 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200
+                    hover:bg-zinc-50 dark:hover:bg-zinc-700 active:scale-95"
                     onClick={() => setIsSettingsOpen(true)}
                 >
                     <Settings className="h-5 w-5"/>
@@ -1218,14 +1229,17 @@ function App() {
 
     const renderToolbar = () => (
         <section
-            className={`sec-1 sticky z-10 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 ${headerPosition === 'top' ? 'top-[57px]_ border-b shadow-sm' : 'bottom-[57px]_ border-t shadow-[0_-1px_3px_rgba(0,0,0,0.05)]'}`}>
+            className={`sec-1 sticky z-10 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 
+            px-3 py-2 ${headerPosition === 'top' ? 'top-[57px]_ border-b shadow-sm' : 'bottom-[57px]_ border-t shadow-[0_-1px_3px_rgba(0,0,0,0.05)]'}`}>
             <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-2">
                 <div
-                    className="flex rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-800 p-1 gap-0.5">
+                    className="flex rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-100
+                    dark:bg-zinc-800 p-1 gap-0.5">
                     <button
                         type="button"
                         aria-label={t.drawMode}
-                        className={`inline-flex h-9 w-10 items-center justify-center rounded ${tool === 'draw' ? 'bg-white dark:bg-zinc-700 text-zinc-950 dark:text-zinc-100 shadow-sm' : 'text-zinc-500 dark:text-zinc-400'}`}
+                        className={`inline-flex h-9 w-10 items-center justify-center rounded ${tool === 'draw' ?
+                            'bg-white dark:bg-zinc-700 text-zinc-950 dark:text-zinc-100 shadow-sm' : 'text-zinc-500 dark:text-zinc-400'}`}
                         onClick={() => changeTool('draw')}
                     >
                         <Brush className="h-4 w-4"/>
@@ -1233,7 +1247,8 @@ function App() {
                     <button
                         type="button"
                         aria-label={t.moveMode}
-                        className={`inline-flex h-9 w-10 items-center justify-center rounded ${tool === 'move' ? 'bg-white dark:bg-zinc-700 text-zinc-950 dark:text-zinc-100 shadow-sm' : 'text-zinc-500 dark:text-zinc-400'}`}
+                        className={`inline-flex h-9 w-10 items-center justify-center rounded ${tool === 'move' ?
+                            'bg-white dark:bg-zinc-700 text-zinc-950 dark:text-zinc-100 shadow-sm' : 'text-zinc-500 dark:text-zinc-400'}`}
                         onClick={() => changeTool('move')}
                     >
                         <Hand className="h-4 w-4"/>
@@ -1241,7 +1256,8 @@ function App() {
                     <button
                         type="button"
                         aria-label="Numbering tool"
-                        className={`inline-flex h-9 px-3 items-center justify-center gap-1.5 rounded text-xs font-medium transition-colors ${
+                        className={`inline-flex h-9 px-3 items-center justify-center gap-1.5 rounded text-xs 
+                        font-medium transition-colors ${
                             tool === 'numbering'
                                 ? 'bg-white dark:bg-zinc-700 text-zinc-950 dark:text-zinc-100 shadow-sm'
                                 : 'text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50'
@@ -1255,7 +1271,10 @@ function App() {
                 <button
                     type="button"
                     aria-label={t.insertText}
-                    className={`inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600 ${pendingText ? 'ring-2 ring-zinc-950 dark:ring-zinc-100' : ''}`}
+                    className={`inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-200 
+                    dark:border-zinc-800 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 
+                    disabled:text-zinc-300 dark:disabled:text-zinc-600 ${pendingText ? 'ring-2 ring-zinc-950 ' +
+                        'dark:ring-zinc-100' : ''}`}
                     disabled={!pdf}
                     onClick={openTextDialog}
                 >
@@ -1263,22 +1282,27 @@ function App() {
                 </button>
 
                 <div
-                    className="flex items-center rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800">
+                    className="flex items-center rounded-md border border-zinc-200 dark:border-zinc-800
+                    bg-white dark:bg-zinc-800">
                     <button
                         type="button"
                         aria-label={t.zoomOut}
-                        className="inline-flex h-10 w-10 items-center justify-center text-zinc-700 dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600"
+                        className="inline-flex h-10 w-10 items-center justify-center text-zinc-700
+                        dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600"
                         disabled={!pdf || zoom <= MIN_ZOOM}
                         onClick={() => updateZoom(zoom - ZOOM_STEP)}
                     >
                         <Minus className="h-4 w-4"/>
                     </button>
                     <span
-                        className="w-9 text-center text-sm font-medium tabular-nums dark:text-zinc-100">{formatZoom(zoom)}</span>
+                        className="w-9 text-center text-sm font-medium tabular-nums dark:text-zinc-100">
+                        {formatZoom(zoom)}
+                    </span>
                     <button
                         type="button"
                         aria-label={t.zoomIn}
-                        className="inline-flex h-10 w-10 items-center justify-center text-zinc-700 dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600"
+                        className="inline-flex h-10 w-10 items-center justify-center text-zinc-700
+                        dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600"
                         disabled={!pdf || zoom >= MAX_ZOOM}
                         onClick={() => updateZoom(zoom + ZOOM_STEP)}
                     >
@@ -1287,11 +1311,13 @@ function App() {
                 </div>
 
                 <div
-                    className="flex flex-auto items-center justify-between rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800">
+                    className="flex flex-auto items-center justify-between rounded-md border border-zinc-200
+                    dark:border-zinc-800 bg-white dark:bg-zinc-800">
                     <button
                         type="button"
                         aria-label={t.prevPage}
-                        className="inline-flex h-10 w-10 items-center justify-center text-zinc-700 dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600"
+                        className="inline-flex h-10 w-10 items-center justify-center text-zinc-700
+                        dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600"
                         disabled={!pdf || pageNumber <= 1}
                         onClick={() => setPageNumber((current) => current - 1)}
                     >
@@ -1301,7 +1327,8 @@ function App() {
                     <button
                         type="button"
                         aria-label={t.nextPage}
-                        className="inline-flex h-10 w-10 items-center justify-center text-zinc-700 dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600"
+                        className="inline-flex h-10 w-10 items-center justify-center text-zinc-700
+                        dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600"
                         disabled={!pdf || pageNumber >= pdf.numPages}
                         onClick={() => setPageNumber((current) => current + 1)}
                     >
@@ -1312,7 +1339,8 @@ function App() {
                 <button
                     type="button"
                     aria-label={t.nextPage}
-                    className="hidden min-[500px]:inline-flex h-10 w-10 items-center justify-center text-zinc-700 dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600"
+                    className="hidden min-[500px]:inline-flex h-10 w-10 items-center justify-center text-zinc-700
+                    dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600"
                     onClick={() => setStB(!showTopBar)}
                 >
                     {headerPosition === 'top' && (
@@ -1334,7 +1362,11 @@ function App() {
                         <button
                             type="button"
                             aria-label={t.toggleBrushSettings}
-                            className={`inline-flex h-9 w-10 items-center justify-center rounded transition-colors ${showBrushSettings ? 'bg-zinc-200 dark:bg-zinc-700 text-zinc-950 dark:text-zinc-100 hover:bg-zinc-300 dark:hover:bg-zinc-600' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50'}`}
+                            className={`inline-flex h-9 w-10 items-center justify-center rounded transition-colors ${
+                                showBrushSettings ? 'bg-zinc-200 dark:bg-zinc-700 text-zinc-950 ' +
+                                    'dark:text-zinc-100 hover:bg-zinc-300 dark:hover:bg-zinc-600' :
+                                    'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 ' +
+                                    'dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50'}`}
                             onClick={() => setShowBrushSettings((prev) => !prev)}
                         >
                             <Sliders className="h-4 w-4"/>
@@ -1342,7 +1374,9 @@ function App() {
                         <button
                             type="button"
                             aria-label={t.undo}
-                            className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600"
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-md border
+                            border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 text-zinc-700
+                            dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600"
                             disabled={!pageStrokes.length && !pageTexts.length}
                             onClick={undoPageStroke}
                         >
@@ -1351,7 +1385,9 @@ function App() {
                         <button
                             type="button"
                             aria-label={t.clearPage}
-                            className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600"
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-md border
+                            border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 text-zinc-700
+                            dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600"
                             disabled={!pageStrokes.length && !pageTexts.length}
                             onClick={clearPage}
                         >
@@ -1367,7 +1403,8 @@ function App() {
         if (tool !== 'draw' || !showBrushSettings) return null
         return (
             <section
-                className={`border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 ${headerPosition === 'top' ? 'border-b shadow-sm' : 'border-t shadow-[0_-1px_3px_rgba(0,0,0,0.05)]'}`}>
+                className={`border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 ${
+                    headerPosition === 'top' ? 'border-b shadow-sm' : 'border-t shadow-[0_-1px_3px_rgba(0,0,0,0.05)]'}`}>
                 <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-3">
                     <div className="flex items-center gap-1">
                         {PEN_COLORS.map((color) => (
@@ -1375,7 +1412,8 @@ function App() {
                                 type="button"
                                 key={color}
                                 aria-label={`${t.useColor} ${color}`}
-                                className={`h-8 w-8 rounded-full border-2 ${penColor === color ? 'border-zinc-950 dark:border-zinc-100' : 'border-zinc-200 dark:border-zinc-700'}`}
+                                className={`h-8 w-8 rounded-full border-2 ${penColor === color ? 'border-zinc-950 ' +
+                                    'dark:border-zinc-100' : 'border-zinc-200 dark:border-zinc-700'}`}
                                 style={{backgroundColor: color}}
                                 onClick={() => setPenColor(color)}
                             />
@@ -1383,7 +1421,8 @@ function App() {
                     </div>
 
                     <label
-                        className="flex min-w-32 flex-1 items-center gap-2 text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                        className="flex min-w-32 flex-1 items-center gap-2 text-xs font-medium text-zinc-700
+                        dark:text-zinc-300">
                         <Brush className="h-4 w-4 shrink-0" aria-hidden="true"/>
                         <input
                             aria-label={t.penSize}
@@ -1392,12 +1431,14 @@ function App() {
                             max="14"
                             value={penWidth}
                             className="w-full accent-zinc-950 dark:accent-zinc-100"
-                            onChange={(event) => setPenWidth(Number(event.target.value))}
+                            onChange={(event) =>
+                                setPenWidth(Number(event.target.value))}
                         />
                     </label>
 
                     <label
-                        className="flex min-w-32 flex-1 items-center gap-2 text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                        className="flex min-w-32 flex-1 items-center gap-2 text-xs font-medium text-zinc-700
+                        dark:text-zinc-300">
                         <Eraser className="h-4 w-4 shrink-0 opacity-60" aria-hidden="true"/>
                         <input
                             aria-label={t.opacity}
@@ -1407,7 +1448,8 @@ function App() {
                             step="0.05"
                             value={opacity}
                             className="w-full accent-zinc-950 dark:accent-zinc-100"
-                            onChange={(event) => setOpacity(Number(event.target.value))}
+                            onChange={(event) =>
+                                setOpacity(Number(event.target.value))}
                         />
                     </label>
                 </div>
@@ -1420,7 +1462,8 @@ function App() {
 
     return (
         <div
-            className="flex h-svh bg-zinc-100 dark:bg-zinc-950 text-zinc-950 dark:text-zinc-100 overflow-hidden relative">
+            className="flex h-svh bg-zinc-100 dark:bg-zinc-950 text-zinc-950 dark:text-zinc-100
+            overflow-hidden relative">
             {/* Sidebar overlay backdrop for mobile */}
             {pdf && isSidebarOpen && (
                 <div
@@ -1451,10 +1494,12 @@ function App() {
 
             {/* Main Content Area */}
             <main
-                className="flex flex-1 flex-col h-full min-w-0 overflow-hidden bg-zinc-100 dark:bg-zinc-950 text-zinc-950 dark:text-zinc-100">
+                className="flex flex-1 flex-col h-full min-w-0 overflow-hidden bg-zinc-100 dark:bg-zinc-950
+                text-zinc-950 dark:text-zinc-100">
                 {isLoading ? (
                     <div
-                        className="absolute inset-0 grid place-items-center bg-white/70 dark:bg-zinc-800/70 text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                        className="absolute inset-0 grid place-items-center bg-white/70 dark:bg-zinc-800/70
+                        text-sm font-medium text-zinc-700 dark:text-zinc-200">
                         {t.loading}
                     </div>
                 ) : null}
@@ -1466,7 +1511,8 @@ function App() {
                          className="relative flex flex-1 overflow-auto px-3 py-4 bg-[#ddd] dark:bg-zinc-900">
                     {!pdf && !isLoading ? (
                         <div
-                            className="m-auto flex max-w-sm flex-col items-center gap-4 rounded-lg border border-dashed border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-8 text-center shadow-sm">
+                            className="m-auto flex max-w-sm flex-col items-center gap-4 rounded-lg border
+                            border-dashed border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-8 text-center shadow-sm">
                             <NoPdf
                                 t={t}
                                 loadPdf={loadPdf}
@@ -1476,7 +1522,8 @@ function App() {
                     ) : (
                         <div className="mx-auto min-w-max pb-24">
                             <div
-                                className="relative overflow-hidden rounded-md bg-white dark:bg-zinc-800 shadow-xl ring-1 ring-zinc-200 dark:ring-zinc-700 mb-10"
+                                className="relative overflow-hidden rounded-md bg-white dark:bg-zinc-800
+                                shadow-xl ring-1 ring-zinc-200 dark:ring-zinc-700 mb-10"
                                 style={{
                                     width: pageSize ? pageSize.width * zoom : undefined,
                                     height: pageSize ? pageSize.height * zoom : undefined,
@@ -1485,8 +1532,9 @@ function App() {
                                 <canvas ref={pdfCanvasRef} className="absolute inset-0"/>
                                 <canvas
                                     ref={inkCanvasRef}
-                                    className={`absolute inset-0 ${pEvents ? 'cursor-crosshair' : 'pointer-events-none'}`}
-                                    style={touchAction}
+                                    className={`absolute inset-0 ${tool === 'draw' || tool === 'numbering' ?
+                                        'cursor-crosshair' : 'pointer-events-none'}`}
+                                    style={{touchAction: tool === 'draw' || tool === 'numbering' ? 'none' : 'auto'}}
                                     onPointerDown={handlePointerDown}
                                     onPointerMove={handlePointerMove}
                                     onPointerUp={finishStroke}
@@ -1494,13 +1542,16 @@ function App() {
                                 />
                                 {isLoading ? (
                                     <div
-                                        className="absolute inset-0 grid place-items-center bg-white/70 dark:bg-zinc-800/70 text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                                        className="absolute inset-0 grid place-items-center bg-white/70
+                                        dark:bg-zinc-800/70 text-sm font-medium text-zinc-700 dark:text-zinc-200">
                                         {t.loading}
                                     </div>
                                 ) : null}
                                 {pendingText ? (
                                     <div
-                                        className="pointer-events-none absolute left-2 top-2 rounded bg-zinc-950/80 dark:bg-zinc-100/80 px-2 py-1 text-xs font-medium text-white dark:text-zinc-900">
+                                        className="pointer-events-none absolute left-2 top-2 rounded
+                                        bg-zinc-950/80 dark:bg-zinc-100/80 px-2 py-1 text-xs font-medium
+                                        text-white dark:text-zinc-900">
                                         {t.tapToPlace}
                                     </div>
                                 ) : null}
@@ -1511,7 +1562,10 @@ function App() {
 
                     {error ? (
                         <div
-                            className={`fixed inset-x-3 z-30 rounded-md border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/80 px-3 py-2 text-sm text-red-700 dark:text-red-300 shadow-lg transition-all duration-300 ${headerPosition === 'bottom' ? 'bottom-[128px]' : 'bottom-3'}`}>
+                            className={`fixed inset-x-3 z-30 rounded-md border border-red-200 
+                            dark:border-red-900 bg-red-50 dark:bg-red-950/80 px-3 py-2 text-sm 
+                            text-red-700 dark:text-red-300 shadow-lg transition-all duration-300 ${
+                                headerPosition === 'bottom' ? 'bottom-[128px]' : 'bottom-3'}`}>
                             {error}
                         </div>
                     ) : null}
@@ -1521,16 +1575,21 @@ function App() {
                 {headerPosition === 'bottom' && renderHeader('bottom')}
                 {isSettingsOpen ? (
                     <div
-                        className="fixed inset-0 z-40 flex items-end bg-black/30 dark:bg-black/60 p-3 sm:items-center sm:justify-center">
+                        className="fixed inset-0 z-40 flex items-end bg-black/30 dark:bg-black/60 p-3
+                        sm:items-center sm:justify-center">
                         <section
-                            className="w-full rounded-lg bg-white dark:bg-zinc-900 p-4 shadow-2xl ring-1 ring-zinc-200 dark:ring-zinc-800 sm:max-w-sm flex flex-col max-h-[85vh]">
+                            className="w-full rounded-lg bg-white dark:bg-zinc-900 p-4 shadow-2xl ring-1
+                            ring-zinc-200 dark:ring-zinc-800 sm:max-w-sm flex flex-col max-h-[85vh]">
                             <div
-                                className="flex items-center justify-between gap-3 shrink-0 pb-3 border-b border-zinc-100 dark:border-zinc-800">
+                                className="flex items-center justify-between gap-3 shrink-0 pb-3 border-b
+                                border-zinc-100 dark:border-zinc-800">
                                 <h2 className="text-base font-semibold dark:text-zinc-100">{t.settings}</h2>
                                 <button
                                     type="button"
                                     aria-label={t.settings}
-                                    className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 active:scale-95 transition-all"
+                                    className="inline-flex h-9 w-9 items-center justify-center rounded-md border
+                                    border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-200
+                                    hover:bg-zinc-50 dark:hover:bg-zinc-800 active:scale-95 transition-all"
                                     onClick={() => setIsSettingsOpen(false)}
                                 >
                                     <X className="h-4 w-4"/>
@@ -1570,7 +1629,12 @@ function App() {
                                 />
                                 <button
                                     type="button"
-                                    className="inline-flex h-11 w-full items-center justify-center rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 px-4 text-sm font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 active:scale-95 transition-all disabled:text-zinc-500 dark:disabled:text-zinc-500 disabled:bg-white dark:disabled:bg-zinc-800 disabled:hover:bg-white dark:disabled:hover:bg-zinc-800"
+                                    className="inline-flex h-11 w-full items-center justify-center rounded-md border
+                                    border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 px-4
+                                    text-sm font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50
+                                    dark:hover:bg-zinc-700 active:scale-95 transition-all disabled:text-zinc-500
+                                    dark:disabled:text-zinc-500 disabled:bg-white dark:disabled:bg-zinc-800
+                                    disabled:hover:bg-white dark:disabled:hover:bg-zinc-800"
                                     disabled={!fullscreenSupported}
                                     onClick={() => void openToFullscreen()}
                                 >
@@ -1578,17 +1642,24 @@ function App() {
                                 </button>
 
                                 <div
-                                    className="rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 p-3">
-                                    <p className="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{t.deviceScreenInfo}</p>
+                                    className="rounded-md border border-zinc-200 dark:border-zinc-800 bg-white
+                                    dark:bg-zinc-800 p-3">
+                                    <p className="text-xs font-medium uppercase tracking-wide text-zinc-500
+                                    dark:text-zinc-400">{t.deviceScreenInfo}</p>
                                     <pre
-                                        className="mt-2 whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed text-zinc-700 dark:text-zinc-300">
+                                        className="mt-2 whitespace-pre-wrap break-words font-mono text-[11px]
+                                        leading-relaxed text-zinc-700 dark:text-zinc-300">
                     {deviceScreenInfoText}
                   </pre>
                                 </div>
                                 <label
-                                    className="flex items-center justify-between gap-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 p-3 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors">
+                                    className="flex items-center justify-between gap-3 rounded-md border
+                                    border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 p-3
+                                    cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors">
                                     <span
-                                        className="text-sm font-medium text-zinc-800 dark:text-zinc-200">{getLang('pinchToZoomOn')}</span>
+                                        className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                                        {getLang('pinchToZoomOn')}
+                                    </span>
                                     <input
                                         checked={isPinchZoomEnabled}
                                         className="h-5 w-5 accent-zinc-950 dark:accent-zinc-100"
@@ -1599,9 +1670,13 @@ function App() {
                                     />
                                 </label>
                                 <label
-                                    className="flex items-center justify-between gap-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 p-3 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors">
+                                    className="flex items-center justify-between gap-3 rounded-md border
+                                    border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 p-3
+                                    cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors">
                                     <span
-                                        className="text-sm font-medium text-zinc-800 dark:text-zinc-200">{t.painting}</span>
+                                        className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                                        {t.painting}
+                                    </span>
                                     <input
                                         checked={isPaintingEnabled}
                                         className="h-5 w-5 accent-zinc-950 dark:accent-zinc-100"
@@ -1616,15 +1691,21 @@ function App() {
                                 </label>
 
                                 <div
-                                    className="rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 p-3">
-                                    <p className="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{t.headerPosition}</p>
+                                    className="rounded-md border border-zinc-200 dark:border-zinc-800
+                                    bg-white dark:bg-zinc-800 p-3">
+                                    <p className="text-xs font-medium uppercase tracking-wide text-zinc-500
+                                    dark:text-zinc-400">{t.headerPosition}</p>
                                     <div className="mt-2 flex gap-2">
                                         <button
                                             type="button"
                                             className={`flex-1 rounded-md py-2 px-3 text-xs font-semibold border transition-all ${
                                                 headerPosition === 'top'
-                                                    ? 'bg-zinc-950 dark:bg-zinc-100 text-white dark:text-zinc-900 border-zinc-950 dark:border-zinc-100 shadow-sm'
-                                                    : 'bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-700 hover:text-zinc-900 dark:hover:text-zinc-100'
+                                                    ? 'bg-zinc-950 dark:bg-zinc-100 text-white ' +
+                                                    'dark:text-zinc-900 border-zinc-950 dark:border-zinc-100 shadow-sm'
+                                                    : 'bg-white dark:bg-zinc-800 text-zinc-700 ' +
+                                                    'dark:text-zinc-300 border-zinc-200 dark:border-zinc-700 ' +
+                                                    'hover:bg-zinc-50 dark:hover:bg-zinc-700 ' +
+                                                    'hover:text-zinc-900 dark:hover:text-zinc-100'
                                             }`}
                                             onClick={() => setHeaderPosition('top')}
                                         >
@@ -1634,8 +1715,12 @@ function App() {
                                             type="button"
                                             className={`flex-1 rounded-md py-2 px-3 text-xs font-semibold border transition-all ${
                                                 headerPosition === 'bottom'
-                                                    ? 'bg-zinc-950 dark:bg-zinc-100 text-white dark:text-zinc-900 border-zinc-950 dark:border-zinc-100 shadow-sm'
-                                                    : 'bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-700 hover:text-zinc-900 dark:hover:text-zinc-100'
+                                                    ? 'bg-zinc-950 dark:bg-zinc-100 text-white ' +
+                                                    'dark:text-zinc-900 border-zinc-950 dark:border-zinc-100 shadow-sm'
+                                                    : 'bg-white dark:bg-zinc-800 text-zinc-700 ' +
+                                                    'dark:text-zinc-300 border-zinc-200 dark:border-zinc-700 ' +
+                                                    'hover:bg-zinc-50 dark:hover:bg-zinc-700 ' +
+                                                    'hover:text-zinc-900 dark:hover:text-zinc-100'
                                             }`}
                                             onClick={() => setHeaderPosition('bottom')}
                                         >
@@ -1647,7 +1732,11 @@ function App() {
                                 {pdf ? (
                                     <button
                                         type="button"
-                                        className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 px-4 text-sm font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 active:scale-95 transition-all"
+                                        className="inline-flex h-11 w-full items-center justify-center gap-2
+                                        rounded-md border border-zinc-200 dark:border-zinc-800 bg-white
+                                        dark:bg-zinc-800 px-4 text-sm font-medium text-zinc-700
+                                        dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700
+                                        active:scale-95 transition-all"
                                         onClick={() => {
                                             const shouldClose = window.confirm(t.confirmClosePdf)
                                             if (shouldClose) {
@@ -1663,7 +1752,10 @@ function App() {
 
                                 <button
                                     type="button"
-                                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-red-600 px-4 text-sm font-medium text-white disabled:bg-zinc-300 dark:disabled:bg-zinc-800 hover:bg-red-700 active:scale-95 transition-all"
+                                    className="inline-flex h-11 w-full items-center justify-center gap-2
+                                    rounded-md bg-red-600 px-4 text-sm font-medium text-white
+                                    disabled:bg-zinc-300 dark:disabled:bg-zinc-800 hover:bg-red-700
+                                    active:scale-95 transition-all"
                                     disabled={!localDataSize}
                                     onClick={() => void deleteLocalData()}
                                 >
@@ -1674,37 +1766,53 @@ function App() {
                                 <hr className="my-2 border-zinc-100 dark:border-zinc-800"/>
 
                                 <details
-                                    className="rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/30 p-3 select-none group">
+                                    className="rounded-md border border-zinc-200 dark:border-zinc-800
+                                    bg-zinc-50/50 dark:bg-zinc-800/30 p-3 select-none group">
                                     <summary
-                                        className="flex cursor-pointer items-center justify-between text-sm font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none">
+                                        className="flex cursor-pointer items-center justify-between text-sm
+                                        font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none">
                                         <span>{t.aboutTitle}</span>
                                         <ChevronRight
-                                            className="h-4 w-4 text-zinc-500 dark:text-zinc-400 transition-transform group-open:rotate-90"/>
+                                            className="h-4 w-4 text-zinc-500 dark:text-zinc-400
+                                            transition-transform group-open:rotate-90"/>
                                     </summary>
                                     <div
-                                        className="mt-3 text-xs text-zinc-700 dark:text-zinc-300 space-y-2 border-t border-zinc-200/60 dark:border-zinc-800 pt-3 select-text leading-relaxed">
+                                        className="mt-3 text-xs text-zinc-700 dark:text-zinc-300 space-y-2
+                                        border-t border-zinc-200/60 dark:border-zinc-800 pt-3 select-text leading-relaxed">
                                         <p>{t.aboutDesc}</p>
-                                        <p className="font-semibold text-zinc-700 dark:text-zinc-300 mt-2">{t.featuresTitle}:</p>
+                                        <p className="font-semibold text-zinc-700 dark:text-zinc-300 mt-2">
+                                            {t.featuresTitle}:
+                                        </p>
                                         <ul className="list-disc pl-4 space-y-1">
                                             <li>{t.featureDraw}</li>
                                             <li>{t.featureText}</li>
                                             <li>{t.featureLocal}</li>
                                         </ul>
-                                        <p className="rounded bg-zinc-100 dark:bg-zinc-800 p-2 text-[10px] text-zinc-500 dark:text-zinc-400 font-medium leading-relaxed mt-2">
+                                        <p className="rounded bg-zinc-100 dark:bg-zinc-800 p-2 text-[10px]
+                                        text-zinc-500 dark:text-zinc-400 font-medium leading-relaxed mt-2">
                                             {t.privacyNote}
                                         </p>
                                     </div>
                                 </details>
 
                                 <div
-                                    className="rounded-md border border-zinc-200 dark:border-zinc-800 bg-rose-50/30 dark:bg-rose-950/20 p-3 text-center">
-                                    <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">{t.donateTitle}</p>
-                                    <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400 leading-normal">{t.donateDesc}</p>
+                                    className="rounded-md border border-zinc-200 dark:border-zinc-800
+                                    bg-rose-50/30 dark:bg-rose-950/20 p-3 text-center">
+                                    <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
+                                        {t.donateTitle}
+                                    </p>
+                                    <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400 leading-normal">
+                                        {t.donateDesc}
+                                    </p>
                                     <a
                                         href={DONATE_URL}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="mt-2.5 inline-flex h-9 w-full items-center justify-center gap-2 rounded-md bg-rose-50 dark:bg-rose-950/40 px-3 text-xs font-bold text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/40 hover:bg-rose-100 dark:hover:bg-rose-950/60 active:scale-95 transition-all"
+                                        className="mt-2.5 inline-flex h-9 w-full items-center justify-center
+                                        gap-2 rounded-md bg-rose-50 dark:bg-rose-950/40 px-3 text-xs font-bold
+                                        text-rose-600 dark:text-rose-400 border border-rose-100
+                                        dark:border-rose-900/40 hover:bg-rose-100 dark:hover:bg-rose-950/60
+                                        active:scale-95 transition-all"
                                     >
                                         <Heart className="h-3.5 w-3.5 fill-rose-500 text-rose-500"/>
                                         <span>{t.donateBtn}</span>
@@ -1717,15 +1825,18 @@ function App() {
 
                 {isTextDialogOpen ? (
                     <div
-                        className="fixed inset-0 z-40 flex items-end bg-black/30 dark:bg-black/60 p-3 sm:items-center sm:justify-center">
+                        className="fixed inset-0 z-40 flex items-end bg-black/30 dark:bg-black/60 p-3
+                        sm:items-center sm:justify-center">
                         <section
-                            className="w-full rounded-lg bg-white dark:bg-zinc-900 p-4 shadow-2xl ring-1 ring-zinc-200 dark:ring-zinc-800 sm:max-w-sm">
+                            className="w-full rounded-lg bg-white dark:bg-zinc-900 p-4 shadow-2xl ring-1
+                            ring-zinc-200 dark:ring-zinc-800 sm:max-w-sm">
                             <div className="flex items-center justify-between gap-3">
                                 <h2 className="text-base font-semibold dark:text-zinc-100">{t.insertText}</h2>
                                 <button
                                     type="button"
                                     aria-label={t.insertText}
-                                    className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-200"
+                                    className="inline-flex h-9 w-9 items-center justify-center rounded-md border
+                                    border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-200"
                                     onClick={() => setIsTextDialogOpen(false)}
                                 >
                                     <X className="h-4 w-4"/>
@@ -1739,7 +1850,8 @@ function App() {
                                 dark:text-zinc-100 p-3 text-base outline-none focus:border-zinc-950
                                 dark:focus:border-zinc-100"
                                 value={textDraft}
-                                onChange={(event) => setTextDraft(event.target.value)}
+                                onChange={(event) =>
+                                    setTextDraft(event.target.value)}
                             />
 
                             <div className="mt-4 flex gap-2">
