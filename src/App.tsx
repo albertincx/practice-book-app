@@ -241,6 +241,7 @@ function App() {
     const [pdfList, setPdfList] = useState<PdfMetadata[]>([])
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
     const [showBrushSettings, setShowBrushSettings] = useState(true)
+    const [floatBtnsSide, setfloatBtnsSide] = useState('right')
     const [lang, setLang] = useState<Lang>(() => {
         const saved = localStorage.getItem('pdf-lang')
         return (saved === 'ru' || saved === 'en') ? saved : 'en'
@@ -1266,11 +1267,11 @@ function App() {
     const renderToolbar = () => (
         <section
             className={`sec-1 sticky z-10 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 
-            px-3 py-2 ${headerPosition === 'top' ? 'top-[57px]_ border-b shadow-sm' : 'bottom-[57px]_ border-t shadow-[0_-1px_3px_rgba(0,0,0,0.05)]'}`}>
+            px-3 py-2 ${headerPosition === 'top' ? 'border-b shadow-sm' : 'border-t shadow-[0_-1px_3px_rgba(0,0,0,0.05)]'}`}>
             <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-2">
                 <div
                     className="flex rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-100
-                    dark:bg-zinc-800 p-1 gap-0.5">
+                    dark:bg-zinc-800 gap-0.5">
                     <button
                         type="button"
                         aria-label={t.drawMode}
@@ -1319,21 +1320,19 @@ function App() {
                             <FullscreenIcon/>
                         </button>
                     )}
-
-                </div>
-                <button
-                    type="button"
-                    aria-label={t.insertText}
-                    className={`inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-200 
+                    <button
+                        type="button"
+                        aria-label={t.insertText}
+                        className={`inline-flex h-10 w-10 items-center justify-center rounded-md border border-zinc-200 
                     dark:border-zinc-800 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 
                     disabled:text-zinc-300 dark:disabled:text-zinc-600 ${pendingText ? 'ring-2 ring-zinc-950 ' +
-                        'dark:ring-zinc-100' : ''}`}
-                    disabled={!pdf}
-                    onClick={openTextDialog}
-                >
-                    <Type className="h-4 w-4"/>
-                </button>
-
+                            'dark:ring-zinc-100' : ''}`}
+                        disabled={!pdf}
+                        onClick={openTextDialog}
+                    >
+                        <Type className="h-4 w-4"/>
+                    </button>
+                </div>
                 <div
                     className="relative flex items-center rounded-md border border-zinc-200 dark:border-zinc-800
     bg-white dark:bg-zinc-800 overflow-hidden">
@@ -1347,6 +1346,10 @@ function App() {
                     >
                         <Minus className="h-4 w-4"/>
                     </button>
+                    <span
+                        className="w-9 hidden sm:flex text-center text-sm font-medium tabular-nums dark:text-zinc-100">
+                        {formatZoom(zoom)}
+                    </span>
                     <button
                         type="button"
                         aria-label={t.zoomIn}
@@ -1733,6 +1736,16 @@ function App() {
                                     setTheme={(t: string) => setLang(t as Lang)}
                                     resolvedTheme={resolvedTheme}
                                 />
+                                <ThemeButtons
+                                    label={'Float btns side'}
+                                    options={[
+                                        {value: 'left', label: 'Left'},
+                                        {value: 'right', label: 'Right'},
+                                    ]}
+                                    theme={theme}
+                                    setTheme={setfloatBtnsSide}
+                                    resolvedTheme={theme}
+                                />
                                 <button
                                     type="button"
                                     className="inline-flex h-11 w-full items-center justify-center rounded-md border
@@ -1994,8 +2007,30 @@ function App() {
             {pdf && (
                 <div
                     className={`rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-100 
-                    dark:bg-zinc-900 fixed p-2_  bottom-2 right-2 ${tool === 'draw' ? '' : ''}`}
+                    dark:bg-zinc-900 fixed bottom-2  ${tool === 'draw' ? '' : ''}
+                    ${floatBtnsSide === 'right' ? 'right-2' : 'left-2'}
+                    `}
                 >
+                    <button
+                        type="button"
+                        aria-label={t.prevPage}
+                        className="inline-flex h-10 w-10 items-center justify-center text-zinc-700
+                        dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600"
+                        disabled={!pdf || pageNumber <= 1}
+                        onClick={() => setPageNumber((current) => current - 1)}
+                    >
+                        <ChevronLeft className="h-4 w-4 min-w-[16px]"/>
+                    </button>
+                    <button
+                        type="button"
+                        aria-label={t.nextPage}
+                        className="inline-flex h-10 w-10 items-center justify-center text-zinc-700
+                        dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600"
+                        disabled={!pdf || pageNumber >= pdf.numPages}
+                        onClick={() => setPageNumber((current) => current + 1)}
+                    >
+                        <ChevronRight className="h-4 w-4 flex-none"/>
+                    </button>
                     <button
                         type="button"
                         aria-label={t.moveMode}

@@ -47,7 +47,7 @@ export const ThemeButtons: React.FC<ThemeButtonsProps> = ({
                                         : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/50'
                             }`}
                         >
-                            <Icon className="w-3.5 h-3.5 flex-none"/>
+                            {Icon && <Icon className="w-3.5 h-3.5 flex-none"/>}
                             <span>{label}</span>
                         </button>
                     );
