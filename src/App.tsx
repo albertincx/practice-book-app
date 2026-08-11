@@ -7,6 +7,7 @@ import {
     ChevronUp,
     Download,
     Eraser,
+    Eye,
     FullscreenIcon,
     Hand,
     Hash,
@@ -96,7 +97,7 @@ function App() {
 // В состояние компонента App добавляем счетчик для цифр
     const [nextNumber, setNextNumber] = useState(1);
     const [showNumberingTip, setShowNumberingTip] = useState<boolean>(false);
-
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [isGalleryOpen, setIsGalleryOpen] = useState(false);
 // Состояние для внутренней галереи снимков
     const [galleryImages, setGalleryImages] = useState<string[]>(() => {
@@ -1657,19 +1658,30 @@ function App() {
                                                  className="w-full h-full object-cover"/>
                                             <div
                                                 className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                                <button
+                                                    type="button"
+                                                    className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-zinc-900 shadow hover:bg-zinc-100 transition-transform active:scale-95"
+                                                    onClick={() => setSelectedImage(src)}
+                                                    title="View"
+                                                >
+                                                    <Eye className="h-4 w-4"/>
+                                                </button>
                                                 <a
                                                     href={src}
                                                     download={`snapshot-${index + 1}.jpg`}
                                                     className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-zinc-900 shadow hover:bg-zinc-100 transition-transform active:scale-95"
-                                                    title="Скачать"
+                                                    title="Download"
                                                 >
                                                     <Download className="h-4 w-4"/>
                                                 </a>
                                                 <button
                                                     type="button"
                                                     className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-red-600 text-white shadow hover:bg-red-700 transition-transform active:scale-95"
-                                                    onClick={() => setGalleryImages((prev) => prev.filter((_, i) => i !== index))}
-                                                    title="Удалить"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setGalleryImages((prev) => prev.filter((_, i) => i !== index));
+                                                    }}
+                                                    title="Delete"
                                                 >
                                                     <Trash2 className="h-4 w-4"/>
                                                 </button>
@@ -1681,7 +1693,29 @@ function App() {
                         </div>
                     </div>
                 )}
-
+                {/* Полноэкранный просмотрщик изображений из галереи */}
+                {selectedImage && (
+                    <div
+                        className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm"
+                        onClick={() => setSelectedImage(null)}
+                    >
+                        <div className="relative max-h-full max-w-full flex items-center justify-center">
+                            <button
+                                type="button"
+                                className="absolute top-2 right-2 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
+                                onClick={() => setSelectedImage(null)}
+                            >
+                                <X className="h-6 w-6"/>
+                            </button>
+                            <img
+                                src={selectedImage}
+                                alt="View"
+                                className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg shadow-2xl"
+                                onClick={(e) => e.stopPropagation()}
+                            />
+                        </div>
+                    </div>
+                )}
                 {isSettingsOpen ? (
                     <div
                         className="fixed inset-0 z-40 flex items-end bg-black/30 dark:bg-black/60 p-3

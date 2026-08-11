@@ -4,16 +4,16 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    
+
     <title>PDF Learn — PDF Editor: Draw and Annotate PDF Online</title>
     <meta name="description" content="PDF Learn — free online tool to draw, take notes, and annotate PDF files directly in your browser. Fast, private, and offline-first." />
     <meta name="keywords" content="pdf editor, draw on pdf, write on pdf, pdf annotation, pdf learn, pdf online, edit pdf online, free pdf editor" />
-    
+
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:title" content="PDF Learn — PDF Editor: Draw and Annotate PDF Online" />
     <meta property="og:description" content="Free online tool to draw, take notes, and annotate PDF files directly in your browser. Processed locally on your device." />
-    
+
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
     <meta property="twitter:title" content="PDF Learn — PDF Editor: Draw and Annotate PDF Online" />
@@ -73,5 +73,12 @@
       </div>
     </div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      (function() {
+        var saved = localStorage.getItem('pdf-theme');
+        var isDark = saved === 'dark' || (saved !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.classList.add(isDark ? 'dark' : 'light');
+      })();
+    </script>
   </body>
 </html>
