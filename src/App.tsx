@@ -464,6 +464,7 @@ function App() {
 
     const loadPdfFromLibrary = async (id: string) => {
         setIsLoading(true)
+        // await delay(9000)
         setError('')
         try {
             const metadata = await getPdfMetadata(id)
@@ -788,6 +789,7 @@ function App() {
             setError(err instanceof Error ? err.message : 'Could not load PDF from URL.')
         }
     }
+    const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
     const loadPdf = async (file: File) => {
         try {
@@ -1547,6 +1549,17 @@ function App() {
             <main
                 className="flex flex-1 flex-col h-full min-w-0 overflow-hidden bg-zinc-100 dark:bg-zinc-950
                 text-zinc-950 dark:text-zinc-100">
+                {isLoading && (
+                    <div
+                        className="absolute inset-0 z-30 m-auto flex max-w-sm flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-zinc-300 dark:border-zinc-700 bg-white/90 dark:bg-zinc-800/90 p-8 text-center shadow-sm backdrop-blur-sm">
+                        <div
+                            className="flex items-center gap-3 px-6 py-3 rounded-md bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-medium text-sm shadow-md">
+                            <div
+                                className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"/>
+                            <span>{t.loading}</span>
+                        </div>
+                    </div>
+                )}
                 {isLoading ? (
                     <div
                         className="absolute inset-0 grid place-items-center bg-white/70 dark:bg-zinc-800/70
