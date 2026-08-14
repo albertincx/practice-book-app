@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>PDF Learn — PDF Editor: Draw and Annotate PDF Online</title>
+    <meta name="description" content="PDF Learn — free online tool to draw, take notes, and annotate PDF files directly in your browser. Fast, private, and offline-first." />
+    <meta name="keywords" content="pdf editor, draw on pdf, write on pdf, pdf annotation, pdf learn, pdf online, edit pdf online, free pdf editor" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="PDF Learn — PDF Editor: Draw and Annotate PDF Online" />
+    <meta property="og:description" content="Free online tool to draw, take notes, and annotate PDF files directly in your browser. Processed locally on your device." />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:title" content="PDF Learn — PDF Editor: Draw and Annotate PDF Online" />
+    <meta property="twitter:description" content="Free online tool to draw, take notes, and annotate PDF files directly in your browser. Processed locally on your device." />
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZQ4FKNBMXN"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-ZQ4FKNBMXN');
+    </script>
+  </head>
+  <body>
+    <div id="root">
+      <!-- SEO Fallback Content (Replaced once React mounts) -->
+      <div style="font-family: system-ui, -apple-system, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px 20px; color: #18181b; line-height: 1.6;">
+        <header style="border-bottom: 1px solid #e4e4e7; padding-bottom: 20px; margin-bottom: 30px;">
+          <h1 style="font-size: 2.25rem; font-weight: 800; color: #09090b; margin: 0 0 8px 0; letter-spacing: -0.025em;">PDF Learn</h1>
+          <p style="font-size: 1.125rem; color: #71717a; margin: 0;">Free Online PDF Editor: drawing, text notes, and annotations</p>
+        </header>
+
+        <main>
+          <section style="margin-bottom: 40px;">
+            <h2 style="font-size: 1.5rem; font-weight: 700; color: #09090b; margin: 0 0 16px 0;">About</h2>
+            <p style="margin: 0 0 16px 0; color: #27272a; font-size: 1.05rem;">
+              <strong>PDF Learn</strong> is a fast and convenient web-based tool designed for editing PDF documents directly in your browser. No need to install complex software or register. Simply upload your file and get started.
+            </p>
+          </section>
+
+          <section style="margin-bottom: 40px;">
+            <h2 style="font-size: 1.5rem; font-weight: 700; color: #09090b; margin: 0 0 16px 0;">Key Features</h2>
+            <ul style="padding-left: 20px; margin: 0; color: #27272a;">
+              <li style="margin-bottom: 12px;"><strong>Draw on PDF Pages:</strong> Highlight important sections, add your signature, or make sketches using a convenient virtual brush. You can customize pen color, thickness, and opacity.</li>
+              <li style="margin-bottom: 12px;"><strong>Text Annotations:</strong> Add printed text to any part of the document. Perfect for filling out forms, questionnaires, or leaving detailed comments.</li>
+              <li style="margin-bottom: 12px;"><strong>Complete Privacy:</strong> All operations are performed exclusively on your computer or phone. Your files are never uploaded to any server, ensuring maximum protection for your personal data.</li>
+              <li style="margin-bottom: 12px;"><strong>Local Library:</strong> Uploaded documents are saved in your browser's local database (IndexedDB), allowing you to resume your work at any time.</li>
+            </ul>
+          </section>
+
+          <section style="margin-bottom: 40px;">
+            <h2 style="font-size: 1.5rem; font-weight: 700; color: #09090b; margin: 0 0 16px 0;">Instructions: How to Start</h2>
+            <ol style="padding-left: 20px; margin: 0; color: #27272a; line-height: 1.8;">
+              <li style="margin-bottom: 8px;">Click the "Add PDF" button.</li>
+              <li style="margin-bottom: 8px;">Select a PDF file from your device.</li>
+              <li style="margin-bottom: 8px;">Use the tools on the toolbar: pen for drawing, eraser, or text blocks for writing.</li>
+              <li style="margin-bottom: 8px;">All changes are automatically saved to your local library.</li>
+            </ol>
+          </section>
+        </main>
+
+        <footer style="border-top: 1px solid #e4e4e7; padding-top: 20px; margin-top: 40px; text-align: center; color: #a1a1aa; font-size: 0.875rem;">
+          <p>© 2026 PDF Learn. Works locally in the browser. All rights reserved.</p>
+        </footer>
+      </div>
+    </div>
+    <script type="module" src="/src/new_version/main.tsx"></script>
+    <script>
+      (function() {
+        var saved = localStorage.getItem('pdf-theme');
+        var isDark = saved === 'dark' || (saved !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.classList.add(isDark ? 'dark' : 'light');
+      })();
+    </script>
+  </body>
+</html>
