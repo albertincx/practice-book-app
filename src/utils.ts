@@ -51,9 +51,24 @@ export type TextDragState = {
 }
 
 
+export type BookFileType = 'pdf' | 'epub' | 'image'
+
+export function getBookFileType(fileName: string, mimeType?: string): BookFileType {
+    const ext = fileName.split('.').pop()?.toLowerCase() || ''
+    if (ext === 'epub' || mimeType === 'application/epub+zip') {
+        return 'epub'
+    }
+    if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'].includes(ext) || (mimeType && mimeType.startsWith('image/'))) {
+        return 'image'
+    }
+    return 'pdf'
+}
+
 export type PdfMetadata = {
     id: string
     name: string
+    fileType?: BookFileType
+    totalPages?: number
     opacity?: number
     paintingEnabled?: boolean
     pageNumber?: number
@@ -277,7 +292,7 @@ export async  function migrateDatabaseIfNeeded(): Promise<string | null> {
     return newId
 }
 
-export async  function savePdfToLibrary(id: string, name: string, data: ArrayBuffer) {
+export async function savePdfToLibrary(id: string, name: string, data: ArrayBuffer, fileType?: BookFileType) {
     if (!('indexedDB' in window)) {
         return
     }
@@ -286,6 +301,7 @@ export async  function savePdfToLibrary(id: string, name: string, data: ArrayBuf
     const metadata: PdfMetadata = {
         id,
         name,
+        fileType: fileType || getBookFileType(name),
         opacity: 0.65,
         paintingEnabled: true,
         pageNumber: 1,

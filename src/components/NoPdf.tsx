@@ -5,13 +5,13 @@ import {useState} from "react";
 
 interface IProps {
     t: any; // объект переводов
-    loadPdf: (file: File) => void;
+    loadBooks: (files: FileList | File[]) => void;
     loadPdfFromUrl: (url: string, fileName?: string) => void;
 }
 
 export default function NoPdf({
                                   t,
-                                  loadPdf,
+                                  loadBooks,
                                   loadPdfFromUrl,
                               }: IProps) {
 
@@ -32,9 +32,9 @@ export default function NoPdf({
         e.preventDefault()
         setIsDragging(false)
 
-        const file = e.dataTransfer.files?.[0]
-        if (file && file.type === 'application/pdf') {
-            void loadPdf(file)
+        const files = e.dataTransfer.files
+        if (files && files.length > 0) {
+            void loadBooks(files)
         }
     }
 
@@ -52,15 +52,16 @@ export default function NoPdf({
             <FileUp className="h-10 w-10 text-zinc-500"/>
             <label
                 className="inline-flex cursor-pointer items-center justify-center rounded-md bg-zinc-950 px-4 py-2 text-sm font-medium text-white active:scale-95">
-                {t.addPdf}
+                {t.addPdf || 'Add Books (PDF, EPUB, JPG)'}
                 <input
                     className="sr-only"
                     type="file"
-                    accept="application/pdf"
+                    multiple
+                    accept="application/pdf,.pdf,application/epub+zip,.epub,image/jpeg,image/jpg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
                     onChange={(event) => {
-                        const file = event.target.files?.[0]
-                        if (file) {
-                            void loadPdf(file)
+                        const files = event.target.files
+                        if (files && files.length > 0) {
+                            void loadBooks(files)
                         }
                         event.currentTarget.value = ''
                     }}

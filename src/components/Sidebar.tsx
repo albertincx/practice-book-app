@@ -1,7 +1,7 @@
 // components/Sidebar.tsx
 
 // import type {PdfMetadata} from '../utils.ts';
-import {Download, FileText, FileUp, FolderOpen, Trash2, Upload, X} from "lucide-react";
+import {BookOpen, Download, FileText, FileUp, FolderOpen, ImageIcon, Trash2, Upload, X} from "lucide-react";
 //
 // interface SidebarProps {
 //     isOpen: boolean;
@@ -21,6 +21,7 @@ export default function Sidebar({
                                     t,
                                     pdfList,
                                     activePdfId,
+                                    loadBooks,
                                     loadPdf,
                                     // loadPdfFromUrl,
                                     loadPdfFromLibrary,
@@ -84,11 +85,16 @@ export default function Sidebar({
                         <input
                             className="sr-only"
                             type="file"
-                            accept="application/pdf"
+                            multiple
+                            accept="application/pdf,.pdf,application/epub+zip,.epub,image/jpeg,image/jpg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
                             onChange={(event) => {
-                                const file = event.target.files?.[0]
-                                if (file) {
-                                    void loadPdf(file)
+                                const files = event.target.files
+                                if (files && files.length > 0) {
+                                    if (loadBooks) {
+                                        void loadBooks(files)
+                                    } else if (loadPdf) {
+                                        void loadPdf(files[0])
+                                    }
                                 }
                                 event.currentTarget.value = ''
                             }}
@@ -106,6 +112,8 @@ export default function Sidebar({
                     ) : (
                         pdfList.map((item: any) => {
                             const isActive = item.id === activePdfId
+                            const fileType = item.fileType || (item.name?.endsWith('.epub') ? 'epub' : item.name?.match(/\.(jpg|jpeg|png|webp)$/i) ? 'image' : 'pdf')
+                            const IconComponent = fileType === 'epub' ? BookOpen : fileType === 'image' ? ImageIcon : FileText
                             return (
                                 <div
                                     key={item.id}
@@ -115,7 +123,7 @@ export default function Sidebar({
                     ${isActive ? 'bg-zinc-100 dark:bg-zinc-800 border-l-4 border-zinc-950 dark:border-zinc-50 font-medium' : 'hover:bg-zinc-50 dark:hover:bg-zinc-800/50 border-l-4 border-transparent'}
                   `}
                                 >
-                                    <FileText
+                                    <IconComponent
                                         className={`h-5 w-5 shrink-0 mt-0.5 ${isActive ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-500'}`}/>
                                     <div className="min-w-0 flex-1">
                                         <p className={`truncate text-sm ${isActive ? 'text-zinc-900 dark:text-zinc-100 font-semibold' : 'text-zinc-700 dark:text-zinc-300'}`}>

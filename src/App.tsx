@@ -30,6 +30,7 @@ import * as pdfjsLib from 'pdfjs-dist'
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url'
 import Toast from "./components/Toast.tsx";
 import {
+    type BookFileType,
     clamp,
     clearAllLocalData,
     deletePdfFromLibrary,
@@ -42,6 +43,7 @@ import {
     formatZoom,
     generateId,
     getAllPdfMetadata,
+    getBookFileType,
     getLibraryTotalSize,
     getPdfFile,
     getPdfMetadata,
@@ -63,6 +65,7 @@ import {
     type Tool,
     ZOOM_STEP
 } from './utils.ts'
+import {type EpubDocument, parseEpub, renderEpubChapterToCanvas} from './epubReader.ts'
 import {TRANSLATIONS} from './translations.ts'
 
 import {useOrientation} from "./hooks/useOrientation.ts";
@@ -86,7 +89,11 @@ function App() {
     const hasOpenedPdfRef = useRef(false)
     const {isPortrait} = useOrientation();
 
+    const [activeFileType, setActiveFileType] = useState<BookFileType>('pdf')
     const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null)
+    const [epubDoc, setEpubDoc] = useState<EpubDocument | null>(null)
+    const [imageDoc, setImageDoc] = useState<HTMLImageElement | null>(null)
+    const [numPages, setNumPages] = useState<number>(0)
     const [pdfName, setPdfName] = useState('')
     const [showTopBar, setStB] = useState(true)
     const [showToast, setShowToast] = useState('')
@@ -464,17 +471,17 @@ function App() {
 
     const loadPdfFromLibrary = async (id: string) => {
         setIsLoading(true)
-        // await delay(9000)
         setError('')
         try {
             const metadata = await getPdfMetadata(id)
             if (!metadata) {
-                throw new Error('PDF metadata not found.')
+                throw new Error('Book metadata not found.')
             }
             const data = await getPdfFile(id)
 
-            await openPdfData(data, metadata.name, {
+            await openBookData(data, metadata.name, {
                 clearStrokes: true,
+                fileType: metadata.fileType,
                 pageNumber: metadata.pageNumber,
                 strokes: metadata.strokes,
                 texts: metadata.texts,
@@ -497,7 +504,7 @@ function App() {
                 setIsPaintingEnabled(metadata.paintingEnabled)
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to load PDF.')
+            setError(err instanceof Error ? err.message : 'Failed to load book.')
         } finally {
             setIsLoading(false)
         }
@@ -509,6 +516,10 @@ function App() {
         pinchStateRef.current = null
         textDragRef.current = null
         setPdf(null)
+        setEpubDoc(null)
+        setImageDoc(null)
+        setNumPages(0)
+        setActiveFileType('pdf')
         setPdfName('')
         setPageNumber(1)
         setPageInput('1')
@@ -598,7 +609,7 @@ function App() {
     }, [])
 
     useEffect(() => {
-        if (!activePdfId || !pdf || !hasOpenedPdfRef.current) {
+        if (!activePdfId || (!pdf && !epubDoc && !imageDoc) || !hasOpenedPdfRef.current) {
             return
         }
 
@@ -618,7 +629,7 @@ function App() {
         }, 250)
 
         return () => window.clearTimeout(saveTimer)
-    }, [activePdfId, isPaintingEnabled, opacity, pageNumber, pdf, penColor, penWidth, strokes, texts, zoom])
+    }, [activePdfId, epubDoc, imageDoc, isPaintingEnabled, opacity, pageNumber, pdf, penColor, penWidth, strokes, texts, zoom])
 
     useEffect(() => {
         if (!isSettingsOpen) {
@@ -629,7 +640,7 @@ function App() {
     }, [isSettingsOpen])
 
     useEffect(() => {
-        if (!pdf) {
+        if (!pdf && !epubDoc && !imageDoc) {
             setIsLoading(false)
             return
         }
@@ -638,44 +649,82 @@ function App() {
         const renderPage = async () => {
             setError('')
 
+            const canvas = pdfCanvasRef.current
+            const context = canvas?.getContext('2d')
+
+            if (!canvas || !context) {
+                return
+            }
+            setIsLoading(true)
+
             try {
-                const page: PDFPageProxy = await pdf.getPage(pageNumber)
-                if (isCancelled) {
-                    return
-                }
+                if (activeFileType === 'pdf' && pdf) {
+                    const page: PDFPageProxy = await pdf.getPage(pageNumber)
+                    if (isCancelled) {
+                        return
+                    }
 
-                const viewport = page.getViewport({scale: zoom})
-                const baseViewport = page.getViewport({scale: 1})
-                const canvas = pdfCanvasRef.current
-                const context = canvas?.getContext('2d')
+                    const viewport = page.getViewport({scale: zoom})
+                    const baseViewport = page.getViewport({scale: 1})
 
-                if (!canvas || !context) {
-                    return
-                }
-                setIsLoading(true)
+                    const ratio = window.devicePixelRatio || 1
+                    canvas.width = Math.floor(viewport.width * ratio)
+                    canvas.height = Math.floor(viewport.height * ratio)
+                    canvas.style.width = `${viewport.width}px`
+                    canvas.style.height = `${viewport.height}px`
 
-                const ratio = window.devicePixelRatio || 1
-                canvas.width = Math.floor(viewport.width * ratio)
-                canvas.height = Math.floor(viewport.height * ratio)
-                canvas.style.width = `${viewport.width}px`
-                canvas.style.height = `${viewport.height}px`
+                    context.setTransform(1, 0, 0, 1, 0, 0)
+                    context.clearRect(0, 0, canvas.width, canvas.height)
 
-                context.setTransform(1, 0, 0, 1, 0, 0)
-                context.clearRect(0, 0, canvas.width, canvas.height)
+                    await page.render({
+                        canvas,
+                        canvasContext: context,
+                        viewport,
+                        transform: ratio === 1 ? undefined : [ratio, 0, 0, ratio, 0, 0],
+                    }).promise
 
-                await page.render({
-                    canvas,
-                    canvasContext: context,
-                    viewport,
-                    transform: ratio === 1 ? undefined : [ratio, 0, 0, ratio, 0, 0],
-                }).promise
+                    if (!isCancelled) {
+                        setPageSize({width: baseViewport.width, height: baseViewport.height})
+                    }
+                } else if (activeFileType === 'epub' && epubDoc) {
+                    const chapterIndex = clamp(pageNumber, 1, epubDoc.numPages)
+                    const chapter = epubDoc.chapters[chapterIndex - 1]
+                    if (chapter) {
+                        const size = await renderEpubChapterToCanvas(
+                            chapter,
+                            chapterIndex,
+                            epubDoc.numPages,
+                            canvas,
+                            zoom
+                        )
+                        if (!isCancelled) {
+                            setPageSize(size)
+                        }
+                    }
+                } else if (activeFileType === 'image' && imageDoc) {
+                    const baseWidth = imageDoc.naturalWidth || 800
+                    const baseHeight = imageDoc.naturalHeight || 600
+                    const ratio = window.devicePixelRatio || 1
 
-                if (!isCancelled) {
-                    setPageSize({width: baseViewport.width, height: baseViewport.height})
+                    const viewportWidth = baseWidth * zoom
+                    const viewportHeight = baseHeight * zoom
+
+                    canvas.width = Math.floor(viewportWidth * ratio)
+                    canvas.height = Math.floor(viewportHeight * ratio)
+                    canvas.style.width = `${viewportWidth}px`
+                    canvas.style.height = `${viewportHeight}px`
+
+                    context.setTransform(ratio * zoom, 0, 0, ratio * zoom, 0, 0)
+                    context.clearRect(0, 0, baseWidth, baseHeight)
+                    context.drawImage(imageDoc, 0, 0, baseWidth, baseHeight)
+
+                    if (!isCancelled) {
+                        setPageSize({width: baseWidth, height: baseHeight})
+                    }
                 }
             } catch (renderError) {
                 if (!isCancelled) {
-                    setError(renderError instanceof Error ? renderError.message : 'Could not render this PDF page.')
+                    setError(renderError instanceof Error ? renderError.message : 'Could not render page.')
                 }
             } finally {
                 if (!isCancelled) {
@@ -689,7 +738,7 @@ function App() {
         return () => {
             isCancelled = true
         }
-    }, [pageNumber, pdf, zoom])
+    }, [activeFileType, epubDoc, imageDoc, pageNumber, pdf, zoom])
 
     useEffect(() => {
         const canvas = inkCanvasRef.current
@@ -723,18 +772,18 @@ function App() {
         }
     }, [pageSize, pageStrokes, pageTexts, zoom])
 
-    const openPdfData = async (
+    const openBookData = async (
         data: ArrayBuffer,
         name: string,
         options: {
             clearStrokes: boolean
+            fileType?: BookFileType
             pageNumber?: number
             strokes?: Stroke[]
             texts?: TextAnnotation[]
             zoom?: number
         },
     ) => {
-        console.log('openPdfData')
         setIsLoading(true)
         setError('')
         cancelActiveStroke()
@@ -742,19 +791,50 @@ function App() {
         pinchStateRef.current = null
         textDragRef.current = null
 
+        const type = options.fileType || getBookFileType(name)
+        setActiveFileType(type)
+
         try {
-            const nextPdf = await pdfjsLib.getDocument({
-                data: data.slice(0),
-                canvasMaxAreaInBytes: -1,
-                isImageDecoderSupported: false,
-                isOffscreenCanvasSupported: false,
-                maxImageSize: -1,
-                useWorkerFetch: true,
-                wasmUrl: '/pdfjs/wasm/',
-            }).promise
-            setPdf(nextPdf)
-            setPdfName(name)
-            setPageNumber(clamp(options.pageNumber ?? 1, 1, nextPdf.numPages))
+            if (type === 'epub') {
+                const epub = await parseEpub(data.slice(0))
+                setEpubDoc(epub)
+                setPdf(null)
+                setImageDoc(null)
+                setNumPages(epub.numPages)
+                setPdfName(name)
+                setPageNumber(clamp(options.pageNumber ?? 1, 1, epub.numPages))
+            } else if (type === 'image') {
+                const blob = new Blob([data.slice(0)])
+                const url = URL.createObjectURL(blob)
+                const img = new Image()
+                img.src = url
+                await img.decode().catch(() => new Promise((res) => {
+                    img.onload = res
+                }))
+                setImageDoc(img)
+                setPdf(null)
+                setEpubDoc(null)
+                setNumPages(1)
+                setPdfName(name)
+                setPageNumber(1)
+            } else {
+                const nextPdf = await pdfjsLib.getDocument({
+                    data: data.slice(0),
+                    canvasMaxAreaInBytes: -1,
+                    isImageDecoderSupported: false,
+                    isOffscreenCanvasSupported: false,
+                    maxImageSize: -1,
+                    useWorkerFetch: true,
+                    wasmUrl: '/pdfjs/wasm/',
+                }).promise
+                setPdf(nextPdf)
+                setEpubDoc(null)
+                setImageDoc(null)
+                setNumPages(nextPdf.numPages)
+                setPdfName(name)
+                setPageNumber(clamp(options.pageNumber ?? 1, 1, nextPdf.numPages))
+            }
+
             setZoom(clamp(options.zoom ?? 1, MIN_ZOOM, MAX_ZOOM))
             if (options.clearStrokes) {
                 setStrokes(options.strokes ?? [])
@@ -762,45 +842,70 @@ function App() {
             }
             hasOpenedPdfRef.current = true
         } catch (loadError) {
-            setError(loadError instanceof Error ? loadError.message : 'Could not open this PDF.')
+            setError(loadError instanceof Error ? loadError.message : 'Could not open this document.')
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    // const openPdfData = openBookData
+
+    const loadBooks = async (files: FileList | File[]) => {
+        setIsLoading(true)
+        setError('')
+        try {
+            const fileArray = Array.from(files)
+            if (fileArray.length === 0) return
+
+            let firstId: string | null = null
+
+            for (let i = 0; i < fileArray.length; i++) {
+                const file = fileArray[i]
+                const data = await file.arrayBuffer()
+                const nextId = generateId()
+                const fileType = getBookFileType(file.name, file.type)
+                await savePdfToLibrary(nextId, file.name, data, fileType)
+                if (i === 0) {
+                    firstId = nextId
+                }
+            }
+
+            await refreshPdfList()
+            if (firstId) {
+                await loadPdfFromLibrary(firstId)
+            }
+            if (fileArray.length > 1) {
+                setShowToast(`Loaded ${fileArray.length} books`)
+            }
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Could not load books.')
         } finally {
             setIsLoading(false)
         }
     }
 
     const loadPdfFromUrl = async (url: string, fileName?: string) => {
-        // console.log('a', url)
         try {
             const response = await fetch(url)
             if (!response.ok) {
-                throw new Error(`Failed to fetch PDF: ${response.statusText}`)
+                throw new Error(`Failed to fetch book: ${response.statusText}`)
             }
 
             const data = await response.arrayBuffer()
             const nextId = generateId()
-
-            // Fallback filename extracted from URL if not provided
             const name = fileName || url.split('/').pop()?.split('?')[0] || 'document.pdf'
+            const fileType = getBookFileType(name)
 
-            await savePdfToLibrary(nextId, name, data)
+            await savePdfToLibrary(nextId, name, data, fileType)
             await refreshPdfList()
             await loadPdfFromLibrary(nextId)
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Could not load PDF from URL.')
+            setError(err instanceof Error ? err.message : 'Could not load book from URL.')
         }
     }
-    // const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
     const loadPdf = async (file: File) => {
-        try {
-            const data = await file.arrayBuffer()
-            const nextId = generateId()
-            await savePdfToLibrary(nextId, file.name, data)
-            await refreshPdfList()
-            await loadPdfFromLibrary(nextId)
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Could not load PDF.')
-        }
+        await loadBooks([file])
     }
 
     const updateZoom = (nextZoom: number) => {
@@ -1131,7 +1236,7 @@ function App() {
     }
 
     const goToPage = () => {
-        if (!pdf) {
+        if (!numPages) {
             return
         }
 
@@ -1141,7 +1246,7 @@ function App() {
             return
         }
 
-        setPageNumber(clamp(requestedPage, 1, pdf.numPages))
+        setPageNumber(clamp(requestedPage, 1, numPages))
     }
 
     // @ts-ignore
@@ -1220,7 +1325,7 @@ function App() {
                             {pdfName || t.emptyHeader}
                         </p>
                         <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                            {pdf ? `${t.savedLocally} - ${pdf.numPages} ${t.pages}` : t.selectOrUpload} zoom {formatZoom(zoom)}
+                            {hasBook ? `${t.savedLocally} - ${numPages} ${t.pages}` : t.selectOrUpload} zoom {formatZoom(zoom)}
                         </p>
                     </div>
                 </div>
@@ -1241,17 +1346,17 @@ function App() {
                         aria-label={t.goToPage}
                         className="h-8 w-14 bg-transparent text-center text-sm font-medium tabular-nums
                         text-zinc-950 dark:text-zinc-100 outline-none"
-                        disabled={!pdf}
+                        disabled={!hasBook}
                         inputMode="numeric"
                         min="1"
-                        max={pdf?.numPages}
+                        max={numPages}
                         pattern="[0-9]*"
                         type="number"
                         value={pageInput}
                         onBlur={goToPage}
                         onChange={(event) => setPageInput(event.target.value)}
                     />
-                    <span className="text-xs text-zinc-500 dark:text-zinc-400">/ {pdf?.numPages ?? 0}</span>
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400">/ {numPages}</span>
                 </form>
                 <button
                     type="button"
@@ -1330,7 +1435,7 @@ function App() {
                     dark:border-zinc-800 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 
                     disabled:text-zinc-300 dark:disabled:text-zinc-600 ${pendingText ? 'ring-2 ring-zinc-950 ' +
                             'dark:ring-zinc-100' : ''}`}
-                        disabled={!pdf}
+                        disabled={!hasBook}
                         onClick={openTextDialog}
                     >
                         <Type className="h-4 w-4"/>
@@ -1344,7 +1449,7 @@ function App() {
                         aria-label={t.zoomOut}
                         className="relative z-10 inline-flex h-10 w-10 items-center justify-center text-zinc-700
         dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600"
-                        disabled={!pdf || zoom <= MIN_ZOOM}
+                        disabled={!hasBook || zoom <= MIN_ZOOM}
                         onClick={() => updateZoom(zoom - ZOOM_STEP)}
                     >
                         <Minus className="h-4 w-4"/>
@@ -1358,7 +1463,7 @@ function App() {
                         aria-label={t.zoomIn}
                         className="relative z-10 inline-flex h-10 w-10 items-center justify-center text-zinc-700
         dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600"
-                        disabled={!pdf || zoom >= MAX_ZOOM}
+                        disabled={!hasBook || zoom >= MAX_ZOOM}
                         onClick={() => updateZoom(zoom + ZOOM_STEP)}
                     >
                         <Plus className="h-4 w-4"/>
@@ -1373,7 +1478,7 @@ function App() {
                         aria-label={t.prevPage}
                         className="inline-flex h-10 w-10 items-center justify-center text-zinc-700
                         dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600"
-                        disabled={!pdf || pageNumber <= 1}
+                        disabled={!hasBook || pageNumber <= 1}
                         onClick={() => setPageNumber((current) => current - 1)}
                     >
                         <ChevronLeft className="h-4 w-4 min-w-[16px]"/>
@@ -1383,7 +1488,7 @@ function App() {
                         aria-label={t.nextPage}
                         className="inline-flex h-10 w-10 items-center justify-center text-zinc-700
                         dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600"
-                        disabled={!pdf || pageNumber >= pdf.numPages}
+                        disabled={!hasBook || pageNumber >= numPages}
                         onClick={() => setPageNumber((current) => current + 1)}
                     >
                         <ChevronRight className="h-4 w-4 flex-none"/>
@@ -1512,12 +1617,14 @@ function App() {
     let touchAction = {touchAction: !['draw', 'numbering'].includes(tool) ? 'none' : 'auto'}
     console.log(touchAction)
 
+    const hasBook = Boolean(pdf || epubDoc || imageDoc)
+
     return (
         <div
             className="flex h-svh bg-zinc-100 dark:bg-zinc-950 text-zinc-950 dark:text-zinc-100
             overflow-hidden relative">
             {/* Sidebar overlay backdrop for mobile */}
-            {pdf && isSidebarOpen && (
+            {hasBook && isSidebarOpen && (
                 <div
                     className="fixed inset-0 z-30 bg-zinc-950/20 dark:bg-zinc-950/40 backdrop-blur-sm lg:hidden"
                     onClick={() => setIsSidebarOpen(false)}
@@ -1525,7 +1632,7 @@ function App() {
             )}
 
             {/* Sidebar */}
-            {pdf && (
+            {hasBook && (
                 <Suspense fallback={<div
                     className="w-80 border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900"/>}>
                     <Sidebar
@@ -1534,6 +1641,7 @@ function App() {
                         t={t}
                         pdfList={pdfList}
                         activePdfId={activePdfId}
+                        loadBooks={loadBooks}
                         loadPdf={loadPdf}
                         loadPdfFromUrl={loadPdfFromUrl}
                         loadPdfFromLibrary={loadPdfFromLibrary}
@@ -1567,19 +1675,19 @@ function App() {
                         {t.loading}
                     </div>
                 ) : null}
-                {headerPosition === 'top' && pdf && renderHeader('top')}
-                {headerPosition === 'top' && pdf && renderToolbar()}
-                {headerPosition === 'top' && pdf && renderBrushSettings()}
+                {headerPosition === 'top' && hasBook && renderHeader('top')}
+                {headerPosition === 'top' && hasBook && renderToolbar()}
+                {headerPosition === 'top' && hasBook && renderBrushSettings()}
 
                 <section id={'main-sec'}
                          className="relative flex flex-1 overflow-auto px-3 py-4 bg-[#ddd] dark:bg-zinc-900">
-                    {!pdf && !isLoading ? (
+                    {!hasBook && !isLoading ? (
                         <div
                             className="m-auto flex max-w-sm flex-col items-center gap-4 rounded-lg border
                             border-dashed border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-8 text-center shadow-sm">
                             <NoPdf
                                 t={t}
-                                loadPdf={loadPdf}
+                                loadBooks={loadBooks}
                                 loadPdfFromUrl={loadPdfFromUrl}
                             />
                         </div>
@@ -1646,7 +1754,7 @@ function App() {
                             className="w-full max-w-3xl rounded-xl bg-white dark:bg-zinc-900 p-5 shadow-2xl ring-1 ring-zinc-200 dark:ring-zinc-800 flex flex-col max-h-[85vh]">
                             <div
                                 className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
-                                <h2 className="text-base font-semibold dark:text-zinc-100">Внутренняя галерея снимков
+                                <h2 className="text-base font-semibold dark:text-zinc-100">Saved gallery
                                     ({galleryImages.length})</h2>
                                 <button
                                     type="button"
@@ -1661,7 +1769,7 @@ function App() {
                                 {galleryImages.length === 0 ? (
                                     <div
                                         className="col-span-full py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">
-                                        Здесь пока нет снимков. Нажимайте кнопку скачивания, чтобы они добавлялись сюда.
+                                        Empty gallery images
                                     </div>
                                 ) : (
                                     galleryImages.map((src, index) => (
@@ -2051,7 +2159,7 @@ function App() {
                     onClose={() => setShowToast('')}
                 />
             )}
-            {pdf && (
+            {hasBook && (
                 <div
                     className={`rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-100 
                     dark:bg-zinc-900 fixed bottom-2  ${tool === 'draw' ? '' : ''}
@@ -2063,7 +2171,7 @@ function App() {
                         aria-label={t.prevPage}
                         className="inline-flex h-10 w-10 items-center justify-center text-zinc-700
                         dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600"
-                        disabled={!pdf || pageNumber <= 1}
+                        disabled={!hasBook || pageNumber <= 1}
                         onClick={() => setPageNumber((current) => current - 1)}
                     >
                         <ChevronLeft className="h-4 w-4 min-w-[16px]"/>
@@ -2073,7 +2181,7 @@ function App() {
                         aria-label={t.nextPage}
                         className="inline-flex h-10 w-10 items-center justify-center text-zinc-700
                         dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600"
-                        disabled={!pdf || pageNumber >= pdf.numPages}
+                        disabled={!hasBook || pageNumber >= numPages}
                         onClick={() => setPageNumber((current) => current + 1)}
                     >
                         <ChevronRight className="h-4 w-4 flex-none"/>

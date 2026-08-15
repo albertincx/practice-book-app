@@ -2,7 +2,7 @@ export const  TRANSLATIONS = {
     en: {
         pinchToZoomOn: 'Two-finger pinch to zoom',
         libraryTitle: 'PDF Library',
-        addPdf: 'Add PDF',
+        addPdf: 'Add Files (img, epub, pdf)',
         addExPdf: 'load example pdf',
         emptyLibrary: 'Library is empty',
         emptyLibrarySub: 'Upload a file to get started',
