@@ -1,32 +1,56 @@
-# React + TypeScript + Vite
+# PDF Learn 📚✍️
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+**PDF Learn** is a lightweight, privacy-focused web application designed for reading and annotating documents seamlessly. Built with React, TypeScript, and Tailwind CSS, it offers smooth PDF, EPUB, and image viewing along with digital ink drawing, text insertion, sequential numbering, and local storage persistence.
 
-Currently, two official plugins are available:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## 📲 Download Mobile App
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Get it on Google Play:
+[https://play.google.com/store/apps/details?id=dev.safiullin.practicebookapp](https://play.google.com/store/apps/details?id=dev.safiullin.practicebookapp)
 
-## Expanding the Oxlint configuration
+---
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+---
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
-```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+
+## ✨ Features
+
+- 📄 **Multi-Format Support**: Open and read PDF, EPUB, and image files directly in the browser.
+- 🎨 **Drawing & Freehand Inking**: Annotate pages with customizable pen colors, brush sizes, and stroke opacity.
+- 💬 **Text Annotations**: Insert and reposition custom text notes anywhere on your documents.
+- 🔢 **Sequential Numbering Tool**: Easily place ordered numbers across pages with simple tap interactions.
+- 🔍 **Pinch-to-Zoom & Navigation**: Fluid zoom control, fast page navigation, and full-screen mode support.
+- 💾 **100% Local & Private**: All documents and annotations are stored locally in IndexedDB/LocalStorage. No files are ever uploaded to an external server.
+- 📤 **Export & Import**: Save your annotations and snapshot pages into an in-app gallery or export changes to share across devices.
+- 🌙 **Dark & Light Mode**: Built-in adaptive theme switching with full Tailwind CSS support.
+
+---
+
+## 🛠️ Tech Stack
+
+- **Framework**: React, Vite, TypeScript
+- **Styling**: Tailwind CSS, Lucide React (icons)
+- **Document Rendering**: `pdfjs-dist` (PDF), Custom EPUB parser
+- **Storage**: IndexedDB, LocalStorage
+- **Deployment & SW**: Progressive Web App (PWA) ready with Service Worker support
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+Ensure you have [Node.js](https://nodejs.org/) installed (v18+ recommended).
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone [https://github.com/your-username/pdf-learn.git](https://github.com/your-username/pdf-learn.git)
+   cd pdf-learn
+
+
+
