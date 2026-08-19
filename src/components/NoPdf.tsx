@@ -5,6 +5,7 @@ import {useState} from "react";
 
 interface IProps {
     t: any; // объект переводов
+    renderGpBtn: any; // объект переводов
     loadBooks: (files: FileList | File[]) => void;
     loadPdfFromUrl: (url: string, fileName?: string) => void;
 }
@@ -13,6 +14,7 @@ export default function NoPdf({
                                   t,
                                   loadBooks,
                                   loadPdfFromUrl,
+                                  renderGpBtn,
                               }: IProps) {
 
 
@@ -67,7 +69,7 @@ export default function NoPdf({
                     }}
                 />
             </label>
-            <div>OR</div>
+            <div className={'text-white dark:text-black'}>OR</div>
             <label
                 className="inline-flex cursor-pointer items-center justify-center rounded-md bg-zinc-950 px-4 py-2 text-sm font-medium text-white active:scale-95"
                 onClick={() => {
@@ -77,6 +79,8 @@ export default function NoPdf({
             >
                 {t.addExPdf}
             </label>
+            <div className={'text-white dark:text-black'}>OR</div>
+            {renderGpBtn()}
         </div>
     )
 }

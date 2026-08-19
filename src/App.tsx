@@ -1618,6 +1618,34 @@ function App() {
     console.log(touchAction)
 
     const hasBook = Boolean(pdf || epubDoc || imageDoc)
+    const renderGpBtn = () => {
+        return (
+            <a href="https://play.google.com/store/apps/details?id=dev.safiullin.practicebookapp"
+               target="_blank"
+               rel="noopener noreferrer"
+               className="inline-flex items-center gap-3 px-5 py-2.5 rounded-xl border transition-all duration-200
+          bg-white text-slate-900 border-slate-300 hover:bg-slate-50 hover:shadow-md
+          dark:bg-slate-950 dark:text-white dark:border-slate-800 dark:hover:bg-slate-900">
+                <svg className="w-7 h-7 flex-shrink-0" viewBox="0 0 24 24">
+                    <path fill="#EA4335"
+                          d="M3.609 1.814L13.792 12 3.61 22.186c-.381-.23-.61-.643-.61-1.135V2.949c0-.492.229-.905.609-1.135z"/>
+                    <path fill="#FBBC04"
+                          d="M17.156 8.636l-3.364 3.364 3.364 3.364 3.824-2.185c.801-.458.801-1.206 0-1.664l-3.824-2.879z"/>
+                    <path fill="#4285F4"
+                          d="M3.609 1.814l10.183 10.186 3.364-3.364L4.697.551c-.427-.244-.925-.236-1.088 1.263z"/>
+                    <path fill="#34A853" d="M3.61 22.186l13.546-10.186-3.364-3.364L3.609 22.186z"/>
+                </svg>
+                <div className="flex flex-col text-left leading-tight">
+    <span className="text-[10px] uppercase tracking-wider font-semibold opacity-75">
+      GET IT ON
+    </span>
+                    <span className="text-base font-bold tracking-tight -mt-0.5">
+      Google Play
+    </span>
+                </div>
+            </a>
+        )
+    }
 
     return (
         <div
@@ -1689,6 +1717,7 @@ function App() {
                                 t={t}
                                 loadBooks={loadBooks}
                                 loadPdfFromUrl={loadPdfFromUrl}
+                                renderGpBtn={renderGpBtn}
                             />
                         </div>
                     ) : (
@@ -1868,6 +1897,7 @@ function App() {
                                 {/* @ts-ignore */}
                                 mode = {__MODE__}
                             </p>
+                            {renderGpBtn()}
                             <div className="mt-4 overflow-y-auto flex-1 pr-1 space-y-3">
                                 <ThemeButtons
                                     options={[
