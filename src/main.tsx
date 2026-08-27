@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 
 import App from './App.tsx'
+import { ReloadPrompt } from './components/ReloadPrompt.tsx';
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -13,5 +14,5 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-createRoot(document.getElementById('root')!).render(<StrictMode><App /></StrictMode>)
+createRoot(document.getElementById('root')!).render(<StrictMode><App /><ReloadPrompt /></StrictMode>)
 // createRoot(document.getElementById('root')!).render(<App />)
