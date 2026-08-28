@@ -5,6 +5,7 @@ import {
     ChevronLeft,
     ChevronRight,
     ChevronUp,
+    Columns2,
     Download,
     Eraser,
     Eye,
@@ -2191,41 +2192,55 @@ function App() {
             )}
             {hasBook && (
                 <div
-                    className={`rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-100 
-                    dark:bg-zinc-900 fixed bottom-2  ${tool === 'draw' ? '' : ''}
-                    ${floatBtnsSide === 'right' ? 'right-2' : 'left-2'}
-                    `}
+                    className={`flex items-center justify-between px-2 rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-100 
+        dark:bg-zinc-900 fixed bottom-2 w-56 ${tool === 'draw' ? '' : ''}
+        ${floatBtnsSide === 'right' ? 'right-2' : 'left-2'}
+        `}
                 >
-                    <button
-                        type="button"
-                        aria-label={t.prevPage}
-                        className="inline-flex h-10 w-10 items-center justify-center text-zinc-700
-                        dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600"
-                        disabled={!hasBook || pageNumber <= 1}
-                        onClick={() => setPageNumber((current) => current - 1)}
-                    >
-                        <ChevronLeft className="h-4 w-4 min-w-[16px]"/>
-                    </button>
-                    <button
-                        type="button"
-                        aria-label={t.nextPage}
-                        className="inline-flex h-10 w-10 items-center justify-center text-zinc-700
-                        dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600"
-                        disabled={!hasBook || pageNumber >= numPages}
-                        onClick={() => setPageNumber((current) => current + 1)}
-                    >
-                        <ChevronRight className="h-4 w-4 flex-none"/>
-                    </button>
-                    <button
-                        type="button"
-                        aria-label={t.moveMode}
-                        className={`inline-flex h-9 w-10 items-center justify-center rounded 
-                        ${tool === 'move' ? 'bg-white dark:bg-zinc-800 text-zinc-950 ' +
-                            'dark:text-zinc-100 shadow-sm' : 'text-zinc-500 dark:text-zinc-400'}`}
-                        onClick={() => changeTool(tool === 'move' ? 'draw' : 'move')}
-                    >
-                        {tool === 'move' ? <Brush className="h-4 w-4"/> : <Hand className="h-4 w-4"/>}
-                    </button>
+                    <div className="flex items-center space-x-4">
+                        <button
+                            type="button"
+                            aria-label={t.prevPage}
+                            className="inline-flex h-10 w-10 items-center justify-center text-zinc-700
+                dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600"
+                            disabled={!hasBook || pageNumber <= 1}
+                            onClick={() => setPageNumber((current) => current - 1)}
+                        >
+                            <ChevronLeft className="h-4 w-4 min-w-[16px]"/>
+                        </button>
+                        <button
+                            type="button"
+                            aria-label={t.nextPage}
+                            className="inline-flex h-10 w-10 items-center justify-center text-zinc-700
+                dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600"
+                            disabled={!hasBook || pageNumber >= numPages}
+                            onClick={() => setPageNumber((current) => current + 1)}
+                        >
+                            <ChevronRight className="h-4 w-4 flex-none"/>
+                        </button>
+                    </div>
+                    <div className="items-center space-x-1">
+                        <button
+                            type="button"
+                            aria-label={t.moveMode}
+                            className={`inline-flex h-9 w-10 items-center justify-center rounded 
+                ${tool === 'move' ? 'bg-white dark:bg-zinc-800 text-zinc-950 ' +
+                                'dark:text-zinc-100 shadow-sm' : 'text-zinc-500 dark:text-zinc-400'}`}
+                            onClick={() => changeTool(tool === 'move' ? 'draw' : 'move')}
+                        >
+                            {tool === 'move' ? <Brush className="h-4 w-4"/> : <Hand className="h-4 w-4"/>}
+                        </button>
+                        <button
+                            type="button"
+                            aria-label={t.splitScreen}
+                            className="hidden inline-flex h-9 w-10 items-center justify-center rounded text-zinc-500 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-100"
+                            onClick={() => {
+                                /* логика сплит экрана */
+                            }}
+                        >
+                            <Columns2 className="h-4 w-4"/>
+                        </button>
+                    </div>
                 </div>
             )}
             {showNumberingTip && (
