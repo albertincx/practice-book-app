@@ -15,12 +15,6 @@ export const ThemeButtons: React.FC<ThemeButtonsProps> = ({
                                                               resolvedTheme,
                                                               label = 'Theme'
                                                           }) => {
-    // const options = [
-    //     { value: 'system', label: 'Auto', icon: Monitor },
-    //     { value: 'light', label: 'Light', icon: Sun },
-    //     { value: 'dark', label: 'Dark', icon: Moon },
-    // ];
-
     const isDark = resolvedTheme === 'dark';
 
     return (
@@ -37,7 +31,7 @@ export const ThemeButtons: React.FC<ThemeButtonsProps> = ({
                             key={value}
                             type="button"
                             onClick={() => setTheme(value)}
-                            className={`flex items-center justify-center gap-1.5 h-8 px-2 rounded text-xs font-bold transition-all cursor-pointer ${
+                            className={`flex items-center justify-center gap-1 h-8 px-1 rounded text-xs font-bold transition-all cursor-pointer ${
                                 isActive
                                     ? isDark
                                         ? 'bg-zinc-700 text-zinc-100 shadow-sm'
@@ -47,7 +41,7 @@ export const ThemeButtons: React.FC<ThemeButtonsProps> = ({
                                         : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/50'
                             }`}
                         >
-                            {Icon && <Icon className="w-3.5 h-3.5 flex-none"/>}
+                            {Icon && <Icon className="w-3 h-3.5 flex-none"/>}
                             <span>{label}</span>
                         </button>
                     );

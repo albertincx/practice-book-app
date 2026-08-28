@@ -410,9 +410,9 @@ function App() {
                 if (parsed.texts && Array.isArray(parsed.texts)) {
                     setTexts(parsed.texts);
                 }
-                setShowToast('Изменения успешно загружены!');
+                setShowToast('Changes loaded!');
             } catch (err) {
-                setError('Ошибка при чтении файла изменений.');
+                setError('Error in changes file.');
             }
         };
         reader.readAsText(file);
@@ -1624,7 +1624,7 @@ function App() {
             <a href="https://play.google.com/store/apps/details?id=dev.safiullin.practicebookapp"
                target="_blank"
                rel="noopener noreferrer"
-               className="inline-flex items-center gap-3 px-5 py-2.5 rounded-xl border transition-all duration-200
+               className="min-w-[200px] inline-flex items-center gap-3 px-5 py-2.5 rounded-xl border transition-all duration-200
           bg-white text-slate-900 border-slate-300 hover:bg-slate-50 hover:shadow-md
           dark:bg-slate-950 dark:text-white dark:border-slate-800 dark:hover:bg-slate-900">
                 <svg className="w-7 h-7 flex-shrink-0" viewBox="0 0 24 24">
@@ -1647,6 +1647,31 @@ function App() {
             </a>
         )
     }
+    const handleShare = (e: any) => {
+        e.preventDefault();
+        navigator.clipboard.writeText("https://play.google.com/store/apps/details?id=dev.safiullin.practicebookapp");
+        setShowToast('Copied!');
+    };
+
+    const renderShareBtn = () => {
+        return (
+            <div className="flex items-center gap-4 mt-2">
+                {renderGpBtn()}
+                <button
+                    onClick={handleShare}
+                    className="w-[30px]_ inline-flex items-center gap-2 px-5 py-3.5 rounded-xl border transition-all duration-200
+                bg-white text-slate-900 border-slate-300 hover:bg-slate-50 hover:shadow-md
+                dark:bg-slate-950 dark:text-white dark:border-slate-800 dark:hover:bg-slate-900 font-semibold text-base">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                              d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+                    </svg>
+                </button>
+                <div className={'text-[14px]'}>👈🏻</div>
+                <div className={'text-[10px]'}>Share with friends</div>
+            </div>
+        );
+    };
 
     return (
         <div
@@ -1718,7 +1743,7 @@ function App() {
                                 t={t}
                                 loadBooks={loadBooks}
                                 loadPdfFromUrl={loadPdfFromUrl}
-                                renderGpBtn={renderGpBtn}
+                                renderGpBtn={renderShareBtn}
                             />
                         </div>
                     ) : (
@@ -1889,16 +1914,7 @@ function App() {
                                     <X className="h-4 w-4"/>
                                 </button>
                             </div>
-                            {/* @ts-ignore */}
-                            <p
-                                className="text-sm font-semibold tabular-nums text-zinc-950 dark:text-zinc-100">
-                                Last
-                                {/* @ts-ignore */}
-                                update: {__APP_VERSION__}, {localDataSize === null ? '...' : formatBytes(localDataSize)}
-                                {/* @ts-ignore */}
-                                mode = {__MODE__}
-                            </p>
-                            {renderGpBtn()}
+                            {renderShareBtn()}
                             <div className="mt-4 overflow-y-auto flex-1 pr-1 space-y-3">
                                 <ThemeButtons
                                     options={[
@@ -1912,8 +1928,8 @@ function App() {
                                 />
                                 <ThemeButtons
                                     options={[
-                                        {value: 'en', label: 'English', icon: Monitor},
-                                        {value: 'ru', label: 'Russian', icon: Monitor},
+                                        {value: 'en', label: 'En', icon: Monitor},
+                                        {value: 'ru', label: 'Ru', icon: Monitor},
                                         {value: 'th', label: 'Thai', icon: Monitor},
                                         {value: 'zh', label: 'Chinese', icon: Monitor},
                                     ]}
@@ -2123,6 +2139,15 @@ function App() {
                                         <span>{t.donateBtn}</span>
                                     </a>
                                 </div>
+                                {/* @ts-ignore */}
+                                <p
+                                    className="text-sm font-semibold tabular-nums text-zinc-950 dark:text-zinc-100 mb-2">
+                                    Last
+                                    {/* @ts-ignore */}
+                                    update: {__APP_VERSION__}, {localDataSize === null ? '...' : formatBytes(localDataSize)}
+                                    {/* @ts-ignore */}<br/>
+                                    {/*mode = {__MODE__}*/}
+                                </p>
                             </div>
                         </section>
                     </div>
