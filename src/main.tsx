@@ -5,6 +5,7 @@ import './index.css'
 
 import App from './App.tsx'
 import { ReloadPrompt } from './components/ReloadPrompt.tsx';
+import {ModalProvider} from "./components/Modal.tsx";
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -14,5 +15,15 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-createRoot(document.getElementById('root')!).render(<StrictMode><App /><ReloadPrompt /></StrictMode>)
-// createRoot(document.getElementById('root')!).render(<App />)
+const A = () => {
+  return (
+      <>
+        <ModalProvider>
+            <App />
+        </ModalProvider>
+      </>
+  )
+}
+
+createRoot(document.getElementById('root')!).render(<StrictMode><A /><ReloadPrompt /></StrictMode>)
+// createRoot(document.getElementById('root')!).render(<A />)

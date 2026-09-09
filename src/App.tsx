@@ -1,4 +1,4 @@
-import {lazy, type PointerEvent, Suspense, useEffect, useMemo, useRef, useState} from 'react'
+import React, {lazy, type PointerEvent, Suspense, useEffect, useMemo, useRef, useState} from 'react'
 import {
     Brush,
     ChevronDown,
@@ -13,6 +13,7 @@ import {
     Hand,
     Hash,
     Heart,
+    Layers,
     Menu,
     Minus,
     Monitor,
@@ -73,6 +74,8 @@ import {useOrientation} from "./hooks/useOrientation.ts";
 
 import NoPdf from "./components/NoPdf.tsx";
 import {ThemeButtons} from "./components/ThemeButtons.tsx";
+import {useModal} from "./components/Modal.tsx";
+import Page from "./components/Page.tsx";
 
 const Sidebar = lazy(() =>
     import('./components/Sidebar.tsx'));
@@ -89,6 +92,7 @@ function App() {
     const textDragRef = useRef<TextDragState | null>(null)
     const hasOpenedPdfRef = useRef(false)
     const {isPortrait} = useOrientation();
+    const { openModal, modals } = useModal();
 
     const [activeFileType, setActiveFileType] = useState<BookFileType>('pdf')
     const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null)
@@ -421,7 +425,7 @@ function App() {
     };
     const handleRenamePdf = async () => {
         if (!activePdfId) return;
-        const newName = window.prompt(t.renamePrompt || "Введите новое название книги:", pdfName);
+        const newName = window.prompt(t.renamePrompt || "Enter name of the book:", pdfName);
         if (!newName || !newName.trim()) return;
 
         const trimmed = newName.trim();
@@ -1322,7 +1326,7 @@ function App() {
                             () => setShowToast(pdfName)
                         }>{pdfName || t.emptyHeader}</p>
                         <p className="truncate text-sm font-medium dark:text-zinc-100 cursor-pointer hover:underline"
-                           onClick={handleRenamePdf} title="Кликните, чтобы переименовать">
+                           onClick={handleRenamePdf} title="Click to rename">
                             {pdfName || t.emptyHeader}
                         </p>
                         <p className="text-xs text-zinc-500 dark:text-zinc-400">
@@ -1495,6 +1499,26 @@ function App() {
                         <ChevronRight className="h-4 w-4 flex-none"/>
                     </button>
                 </div>
+                <button
+                    type="button"
+                    aria-label="Open"
+                    className={`inline-flex h-9 items-center justify-center gap-2 px-3 rounded text-sm font-medium transition-colors ${
+                        modals.length > 0
+                            ? 'bg-white dark:bg-zinc-700 text-zinc-950 dark:text-zinc-100 shadow-sm'
+                            : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-100'
+                    }`}
+                    onClick={() =>
+                        openModal(
+                            'Window',
+                            <div className="space-y-4 text-zinc-800 dark:text-zinc-200">
+                                <Page/>
+                            </div>
+                        )
+                    }
+                >
+                    <Layers className="h-4 w-4" />
+                    {!!modals.length && <span>({modals.length})</span>}
+                </button>
                 <button
                     type="button"
                     aria-label={t.nextPage}
@@ -1830,7 +1854,7 @@ function App() {
                                     galleryImages.map((src, index) => (
                                         <div key={index}
                                              className="relative group rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800 aspect-[3/4]">
-                                            <img src={src} alt={`Снимок ${index + 1}`}
+                                            <img src={src} alt={`screenshot ${index + 1}`}
                                                  className="w-full h-full object-cover"/>
                                             <div
                                                 className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
