@@ -76,6 +76,7 @@ import NoPdf from "./components/NoPdf.tsx";
 import {ThemeButtons} from "./components/ThemeButtons.tsx";
 import {useModal} from "./components/Modal.tsx";
 import Page from "./components/Page.tsx";
+import {LoaderSpinner} from './components/Loader.tsx'
 
 const Sidebar = lazy(() =>
     import('./components/Sidebar.tsx'));
@@ -92,7 +93,7 @@ function App() {
     const textDragRef = useRef<TextDragState | null>(null)
     const hasOpenedPdfRef = useRef(false)
     const {isPortrait} = useOrientation();
-    const { openModal, modals } = useModal();
+    const {openModal, modals} = useModal();
 
     const [activeFileType, setActiveFileType] = useState<BookFileType>('pdf')
     const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null)
@@ -125,6 +126,23 @@ function App() {
         const saved = localStorage.getItem('pdf-theme')
         return (saved === 'light' || saved === 'dark' || saved === 'system') ? saved : 'system'
     })
+
+    const handlePageChange = (newPage: number) => {
+        if (newPage === pageNumber || newPage < 1 || newPage > numPages) return;
+
+        setIsPageLoading(true); // Включаем лоадер перед началом смены страницы
+        setPageNumber(newPage);
+    };
+
+    const handlePrevPage = () => {
+        setIsPageLoading(true);
+        setPageNumber((current) => Math.max(current - 1, 1));
+    };
+
+    const handleNextPage = () => {
+        setIsPageLoading(true);
+        setPageNumber((current) => Math.min(current + 1, numPages));
+    };
 
     function setTheme1(te: string) {
         document.documentElement.classList.remove('dark');
@@ -255,6 +273,8 @@ function App() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
     const [showBrushSettings, setShowBrushSettings] = useState(true)
     const [floatBtnsSide, setfloatBtnsSide] = useState('right')
+    const [isPageLoading, setIsPageLoading] = useState<boolean>(false);
+
     const [lang, setLang] = useState<Lang>(() => {
         const saved = localStorage.getItem('pdf-lang')
         return (saved === 'ru' || saved === 'en') ? saved : 'en'
@@ -354,7 +374,8 @@ function App() {
     )
 
     useEffect(() => {
-        setPageInput(String(pageNumber))
+        setPageInput(String(pageNumber));
+        setIsPageLoading(false);
     }, [pageNumber])
 
 // Общая функция для создания объединенного Blob
@@ -526,7 +547,7 @@ function App() {
         setNumPages(0)
         setActiveFileType('pdf')
         setPdfName('')
-        setPageNumber(1)
+        handlePageChange(1)
         setPageInput('1')
         setZoom(1)
         setStrokes([])
@@ -807,7 +828,7 @@ function App() {
                 setImageDoc(null)
                 setNumPages(epub.numPages)
                 setPdfName(name)
-                setPageNumber(clamp(options.pageNumber ?? 1, 1, epub.numPages))
+                handlePageChange(clamp(options.pageNumber ?? 1, 1, epub.numPages))
             } else if (type === 'image') {
                 const blob = new Blob([data.slice(0)])
                 const url = URL.createObjectURL(blob)
@@ -821,7 +842,7 @@ function App() {
                 setEpubDoc(null)
                 setNumPages(1)
                 setPdfName(name)
-                setPageNumber(1)
+                handlePageChange(1)
             } else {
                 const nextPdf = await pdfjsLib.getDocument({
                     data: data.slice(0),
@@ -837,7 +858,7 @@ function App() {
                 setImageDoc(null)
                 setNumPages(nextPdf.numPages)
                 setPdfName(name)
-                setPageNumber(clamp(options.pageNumber ?? 1, 1, nextPdf.numPages))
+                handlePageChange(clamp(options.pageNumber ?? 1, 1, nextPdf.numPages))
             }
 
             setZoom(clamp(options.zoom ?? 1, MIN_ZOOM, MAX_ZOOM))
@@ -1173,7 +1194,7 @@ function App() {
         hasOpenedPdfRef.current = false
         setPdf(null)
         setPdfName('')
-        setPageNumber(1)
+        handlePageChange(1)
         setPageInput('1')
         setZoom(1)
         setStrokes([])
@@ -1251,7 +1272,7 @@ function App() {
             return
         }
 
-        setPageNumber(clamp(requestedPage, 1, numPages))
+        handlePageChange(clamp(requestedPage, 1, numPages))
     }
 
     // @ts-ignore
@@ -1484,7 +1505,7 @@ function App() {
                         className="inline-flex h-10 w-10 items-center justify-center text-zinc-700
                         dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600"
                         disabled={!hasBook || pageNumber <= 1}
-                        onClick={() => setPageNumber((current) => current - 1)}
+                        onClick={handlePrevPage}
                     >
                         <ChevronLeft className="h-4 w-4 min-w-[16px]"/>
                     </button>
@@ -1494,7 +1515,7 @@ function App() {
                         className="inline-flex h-10 w-10 items-center justify-center text-zinc-700
                         dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600"
                         disabled={!hasBook || pageNumber >= numPages}
-                        onClick={() => setPageNumber((current) => current + 1)}
+                        onClick={handleNextPage}
                     >
                         <ChevronRight className="h-4 w-4 flex-none"/>
                     </button>
@@ -1516,7 +1537,7 @@ function App() {
                         )
                     }
                 >
-                    <Layers className="h-4 w-4" />
+                    <Layers className="h-4 w-4"/>
                     {!!modals.length && <span>({modals.length})</span>}
                 </button>
                 <button
@@ -1746,6 +1767,12 @@ function App() {
                         </div>
                     </div>
                 )}
+                {(isPageLoading) && (
+                    <div
+                        className="absolute inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+                        <LoaderSpinner/>
+                    </div>
+                )}
                 {isLoading ? (
                     <div
                         className="absolute inset-0 grid place-items-center bg-white/70 dark:bg-zinc-800/70
@@ -1783,9 +1810,9 @@ function App() {
                                 <canvas ref={pdfCanvasRef} className="absolute inset-0"/>
                                 <canvas
                                     ref={inkCanvasRef}
-                                    className={`absolute inset-0 ${tool === 'draw' || tool === 'numbering' ?
-                                        'cursor-crosshair' : 'pointer-events-none'}`}
-                                    style={{touchAction: tool === 'draw' || tool === 'numbering' ? 'none' : 'auto'}}
+                                    className={`absolute inset-0 touch-none ${
+                                        tool === 'draw' || tool === 'numbering' ? 'cursor-crosshair' : 'pointer-events-none'
+                                    }`}
                                     onPointerDown={handlePointerDown}
                                     onPointerMove={handlePointerMove}
                                     onPointerUp={finishStroke}
@@ -2253,7 +2280,7 @@ function App() {
                             className="inline-flex h-10 w-10 items-center justify-center text-zinc-700
                 dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600"
                             disabled={!hasBook || pageNumber <= 1}
-                            onClick={() => setPageNumber((current) => current - 1)}
+                            onClick={handlePrevPage}
                         >
                             <ChevronLeft className="h-4 w-4 min-w-[16px]"/>
                         </button>
@@ -2263,7 +2290,7 @@ function App() {
                             className="inline-flex h-10 w-10 items-center justify-center text-zinc-700
                 dark:text-zinc-200 disabled:text-zinc-300 dark:disabled:text-zinc-600"
                             disabled={!hasBook || pageNumber >= numPages}
-                            onClick={() => setPageNumber((current) => current + 1)}
+                            onClick={handleNextPage}
                         >
                             <ChevronRight className="h-4 w-4 flex-none"/>
                         </button>
