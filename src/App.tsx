@@ -127,21 +127,31 @@ function App() {
         return (saved === 'light' || saved === 'dark' || saved === 'system') ? saved : 'system'
     })
 
-    const handlePageChange = (newPage: number) => {
-        if (newPage === pageNumber || newPage < 1 || newPage > numPages) return;
+    const [isPageLoading, setIsPageLoading] = useState<boolean>(false);
+    const pageChangeStartTimeRef = useRef<number>(0);
+    const pageTransitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const prevPageNumberRef = useRef(1);
 
-        setIsPageLoading(true); // Включаем лоадер перед началом смены страницы
+    const handlePageChange = (newPage: number) => {
+        if (newPage === pageNumber || newPage < 1 || (numPages > 0 && newPage > numPages)) return;
+
+        if (pageTransitionTimerRef.current) {
+            clearTimeout(pageTransitionTimerRef.current);
+            pageTransitionTimerRef.current = null;
+        }
+        pageChangeStartTimeRef.current = Date.now();
+        setIsPageLoading(true);
         setPageNumber(newPage);
     };
 
     const handlePrevPage = () => {
-        setIsPageLoading(true);
-        setPageNumber((current) => Math.max(current - 1, 1));
+        if (pageNumber <= 1) return;
+        handlePageChange(pageNumber - 1);
     };
 
     const handleNextPage = () => {
-        setIsPageLoading(true);
-        setPageNumber((current) => Math.min(current + 1, numPages));
+        if (numPages > 0 && pageNumber >= numPages) return;
+        handlePageChange(pageNumber + 1);
     };
 
     function setTheme1(te: string) {
@@ -273,7 +283,6 @@ function App() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
     const [showBrushSettings, setShowBrushSettings] = useState(true)
     const [floatBtnsSide, setfloatBtnsSide] = useState('right')
-    const [isPageLoading, setIsPageLoading] = useState<boolean>(false);
 
     const [lang, setLang] = useState<Lang>(() => {
         const saved = localStorage.getItem('pdf-lang')
@@ -374,8 +383,14 @@ function App() {
     )
 
     useEffect(() => {
+        if (prevPageNumberRef.current !== pageNumber) {
+            prevPageNumberRef.current = pageNumber;
+            if (!pageChangeStartTimeRef.current) {
+                pageChangeStartTimeRef.current = Date.now();
+            }
+            setIsPageLoading(true);
+        }
         setPageInput(String(pageNumber));
-        setIsPageLoading(false);
     }, [pageNumber])
 
 // Общая функция для создания объединенного Blob
@@ -668,6 +683,7 @@ function App() {
     useEffect(() => {
         if (!pdf && !epubDoc && !imageDoc) {
             setIsLoading(false)
+            setIsPageLoading(false)
             return
         }
 
@@ -679,6 +695,8 @@ function App() {
             const context = canvas?.getContext('2d')
 
             if (!canvas || !context) {
+                setIsLoading(false)
+                setIsPageLoading(false)
                 return
             }
             setIsLoading(true)
@@ -755,6 +773,21 @@ function App() {
             } finally {
                 if (!isCancelled) {
                     setIsLoading(false)
+                    const startTime = pageChangeStartTimeRef.current || 0
+                    const elapsed = startTime > 0 ? Date.now() - startTime : 999
+                    // Минимальное время показа лоадера (280 мс), чтобы переход был четко заметен
+                    const minDisplayTime = startTime > 0 ? 280 : 0
+                    const remaining = Math.max(0, minDisplayTime - elapsed)
+
+                    if (pageTransitionTimerRef.current) {
+                        clearTimeout(pageTransitionTimerRef.current)
+                    }
+                    pageTransitionTimerRef.current = setTimeout(() => {
+                        if (!isCancelled) {
+                            setIsPageLoading(false)
+                            pageChangeStartTimeRef.current = 0
+                        }
+                    }, remaining)
                 }
             }
         }
@@ -763,6 +796,10 @@ function App() {
 
         return () => {
             isCancelled = true
+            if (pageTransitionTimerRef.current) {
+                clearTimeout(pageTransitionTimerRef.current)
+                pageTransitionTimerRef.current = null
+            }
         }
     }, [activeFileType, epubDoc, imageDoc, pageNumber, pdf, zoom])
 
@@ -1754,9 +1791,9 @@ function App() {
 
             {/* Main Content Area */}
             <main
-                className="flex flex-1 flex-col h-full min-w-0 overflow-hidden bg-zinc-100 dark:bg-zinc-950
+                className="relative flex flex-1 flex-col h-full min-w-0 overflow-hidden bg-zinc-100 dark:bg-zinc-950
                 text-zinc-950 dark:text-zinc-100">
-                {isLoading && (
+                {isLoading && !isPageLoading && (
                     <div
                         className="absolute inset-0 z-30 m-auto flex max-w-sm flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-zinc-300 dark:border-zinc-700 bg-white/90 dark:bg-zinc-800/90 p-8 text-center shadow-sm backdrop-blur-sm">
                         <div
@@ -1767,19 +1804,14 @@ function App() {
                         </div>
                     </div>
                 )}
-                {(isPageLoading) && (
+                {isPageLoading && (
                     <div
-                        className="absolute inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-                        <LoaderSpinner/>
+                        className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm pointer-events-none transition-opacity duration-200">
+                        <div className="flex flex-col items-center justify-center gap-3 px-6 py-5 rounded-2xl bg-zinc-900/90 dark:bg-zinc-800/90 text-white shadow-2xl border border-white/10 backdrop-blur-md">
+                            <LoaderSpinner size="md" label={`${t.loading}...`} />
+                        </div>
                     </div>
                 )}
-                {isLoading ? (
-                    <div
-                        className="absolute inset-0 grid place-items-center bg-white/70 dark:bg-zinc-800/70
-                        text-sm font-medium text-zinc-700 dark:text-zinc-200">
-                        {t.loading}
-                    </div>
-                ) : null}
                 {headerPosition === 'top' && hasBook && renderHeader('top')}
                 {headerPosition === 'top' && hasBook && renderToolbar()}
                 {headerPosition === 'top' && hasBook && renderBrushSettings()}
