@@ -12,7 +12,8 @@ export default ({mode}: any) => defineConfig({
         VitePWA({
             registerType: 'prompt', // Ключевой параметр: не обновлять автоматически
             workbox: {
-                globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'], // Кэшируем весь билд
+                globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,mjs,wasm,pdf}'], // Кэшируем весь билд
+                maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MiB (pdf.worker.mjs ~2.2 MB)
             },
             manifest: {
                 name: 'PDF Learn — Draw and Annotate PDF Online',
