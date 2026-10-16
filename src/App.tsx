@@ -131,6 +131,12 @@ function App() {
     const pageChangeStartTimeRef = useRef<number>(0);
     const pageTransitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const prevPageNumberRef = useRef(1);
+    const renderedPagesCacheRef = useRef<Map<string, { canvas: HTMLCanvasElement; pageSize: PageSize }>>(new Map());
+
+    const getPageCacheKey = (page: number, currentZoom: number) => {
+        const ratio = window.devicePixelRatio || 1;
+        return `${activePdfId || pdfName}-${activeFileType}-${page}-${currentZoom}-${ratio}`;
+    };
 
     const handlePageChange = (newPage: number) => {
         if (newPage === pageNumber || newPage < 1 || (numPages > 0 && newPage > numPages)) return;
@@ -139,6 +145,7 @@ function App() {
             clearTimeout(pageTransitionTimerRef.current);
             pageTransitionTimerRef.current = null;
         }
+
         pageChangeStartTimeRef.current = Date.now();
         setIsPageLoading(true);
         setPageNumber(newPage);
@@ -556,6 +563,7 @@ function App() {
         pointersRef.current.clear()
         pinchStateRef.current = null
         textDragRef.current = null
+        renderedPagesCacheRef.current.clear()
         setPdf(null)
         setEpubDoc(null)
         setImageDoc(null)
@@ -688,6 +696,8 @@ function App() {
         }
 
         let isCancelled = false
+        let renderTask: { cancel?: () => void; promise: Promise<unknown> } | null = null
+
         const renderPage = async () => {
             setError('')
 
@@ -699,9 +709,47 @@ function App() {
                 setIsPageLoading(false)
                 return
             }
+
             setIsLoading(true)
+            setIsPageLoading(true)
+            if (!pageChangeStartTimeRef.current) {
+                pageChangeStartTimeRef.current = Date.now()
+            }
+
+            // Даем браузеру отрисовать кадр с лоадером перед началом рендера страницы (особенно когда страница уже в кеше pdf.js)
+            await new Promise<void>((resolve) => {
+                requestAnimationFrame(() => {
+                    setTimeout(resolve, 0)
+                })
+            })
+            if (isCancelled) {
+                return
+            }
+
+            const cacheKey = getPageCacheKey(pageNumber, zoom)
+            const cached = renderedPagesCacheRef.current.get(cacheKey)
 
             try {
+                if (cached) {
+                    // Move to end for LRU eviction
+                    renderedPagesCacheRef.current.delete(cacheKey)
+                    renderedPagesCacheRef.current.set(cacheKey, cached)
+
+                    canvas.width = cached.canvas.width
+                    canvas.height = cached.canvas.height
+                    canvas.style.width = `${cached.pageSize.width * zoom}px`
+                    canvas.style.height = `${cached.pageSize.height * zoom}px`
+
+                    context.setTransform(1, 0, 0, 1, 0, 0)
+                    context.clearRect(0, 0, canvas.width, canvas.height)
+                    context.drawImage(cached.canvas, 0, 0)
+
+                    setPageSize(cached.pageSize)
+                    return
+                }
+
+                let nextPageSize: PageSize | null = null
+
                 if (activeFileType === 'pdf' && pdf) {
                     const page: PDFPageProxy = await pdf.getPage(pageNumber)
                     if (isCancelled) {
@@ -720,15 +768,17 @@ function App() {
                     context.setTransform(1, 0, 0, 1, 0, 0)
                     context.clearRect(0, 0, canvas.width, canvas.height)
 
-                    await page.render({
+                    renderTask = page.render({
                         canvas,
                         canvasContext: context,
                         viewport,
                         transform: ratio === 1 ? undefined : [ratio, 0, 0, ratio, 0, 0],
-                    }).promise
+                    })
+                    await renderTask.promise
 
                     if (!isCancelled) {
-                        setPageSize({width: baseViewport.width, height: baseViewport.height})
+                        nextPageSize = {width: baseViewport.width, height: baseViewport.height}
+                        setPageSize(nextPageSize)
                     }
                 } else if (activeFileType === 'epub' && epubDoc) {
                     const chapterIndex = clamp(pageNumber, 1, epubDoc.numPages)
@@ -742,6 +792,7 @@ function App() {
                             zoom
                         )
                         if (!isCancelled) {
+                            nextPageSize = size
                             setPageSize(size)
                         }
                     }
@@ -763,11 +814,32 @@ function App() {
                     context.drawImage(imageDoc, 0, 0, baseWidth, baseHeight)
 
                     if (!isCancelled) {
-                        setPageSize({width: baseWidth, height: baseHeight})
+                        nextPageSize = {width: baseWidth, height: baseHeight}
+                        setPageSize(nextPageSize)
                     }
                 }
-            } catch (renderError) {
-                if (!isCancelled) {
+
+                if (!isCancelled && nextPageSize && canvas.width > 0 && canvas.height > 0) {
+                    const offscreen = document.createElement('canvas')
+                    offscreen.width = canvas.width
+                    offscreen.height = canvas.height
+                    const offscreenCtx = offscreen.getContext('2d')
+                    if (offscreenCtx) {
+                        offscreenCtx.drawImage(canvas, 0, 0)
+                        if (renderedPagesCacheRef.current.size >= 15) {
+                            const oldestKey = renderedPagesCacheRef.current.keys().next().value
+                            if (oldestKey !== undefined) {
+                                renderedPagesCacheRef.current.delete(oldestKey)
+                            }
+                        }
+                        renderedPagesCacheRef.current.set(cacheKey, {
+                            canvas: offscreen,
+                            pageSize: nextPageSize,
+                        })
+                    }
+                }
+            } catch (renderError: any) {
+                if (!isCancelled && renderError?.name !== 'RenderingCancelledException') {
                     setError(renderError instanceof Error ? renderError.message : 'Could not render page.')
                 }
             } finally {
@@ -796,6 +868,9 @@ function App() {
 
         return () => {
             isCancelled = true
+            if (renderTask?.cancel) {
+                renderTask.cancel()
+            }
             if (pageTransitionTimerRef.current) {
                 clearTimeout(pageTransitionTimerRef.current)
                 pageTransitionTimerRef.current = null
@@ -853,6 +928,7 @@ function App() {
         pointersRef.current.clear()
         pinchStateRef.current = null
         textDragRef.current = null
+        renderedPagesCacheRef.current.clear()
 
         const type = options.fileType || getBookFileType(name)
         setActiveFileType(type)

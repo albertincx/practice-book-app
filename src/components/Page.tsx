@@ -345,6 +345,8 @@ function Page() {
         return () => window.clearTimeout(saveTimer)
     }, [activePdfId, epubDoc, imageDoc, isPaintingEnabled, opacity, pageNumber, pdf, penColor, penWidth, strokes, texts, zoom])
 
+    const renderedPagesCacheRef = useRef<Map<string, { canvas: HTMLCanvasElement; pageSize: PageSize }>>(new Map())
+
     useEffect(() => {
         if (!pdf && !epubDoc && !imageDoc) {
             setIsLoading(false)
@@ -352,6 +354,8 @@ function Page() {
         }
 
         let isCancelled = false
+        let renderTask: { cancel?: () => void; promise: Promise<unknown> } | null = null
+
         const renderPage = async () => {
             setError('')
 
@@ -363,7 +367,39 @@ function Page() {
             }
             setIsLoading(true)
 
+            await new Promise<void>((resolve) => {
+                requestAnimationFrame(() => {
+                    setTimeout(resolve, 0)
+                })
+            })
+            if (isCancelled) {
+                return
+            }
+
+            const ratio = window.devicePixelRatio || 1
+            const cacheKey = `${activePdfId || pdfName}-${activeFileType}-${pageNumber}-${zoom}-${ratio}`
+            const cached = renderedPagesCacheRef.current.get(cacheKey)
+
             try {
+                if (cached) {
+                    renderedPagesCacheRef.current.delete(cacheKey)
+                    renderedPagesCacheRef.current.set(cacheKey, cached)
+
+                    canvas.width = cached.canvas.width
+                    canvas.height = cached.canvas.height
+                    canvas.style.width = `${cached.pageSize.width * zoom}px`
+                    canvas.style.height = `${cached.pageSize.height * zoom}px`
+
+                    context.setTransform(1, 0, 0, 1, 0, 0)
+                    context.clearRect(0, 0, canvas.width, canvas.height)
+                    context.drawImage(cached.canvas, 0, 0)
+
+                    setPageSize(cached.pageSize)
+                    return
+                }
+
+                let nextPageSize: PageSize | null = null
+
                 if (activeFileType === 'pdf' && pdf) {
                     const page: PDFPageProxy = await pdf.getPage(pageNumber)
                     if (isCancelled) {
@@ -373,7 +409,6 @@ function Page() {
                     const viewport = page.getViewport({scale: zoom})
                     const baseViewport = page.getViewport({scale: 1})
 
-                    const ratio = window.devicePixelRatio || 1
                     canvas.width = Math.floor(viewport.width * ratio)
                     canvas.height = Math.floor(viewport.height * ratio)
                     canvas.style.width = `${viewport.width}px`
@@ -382,15 +417,17 @@ function Page() {
                     context.setTransform(1, 0, 0, 1, 0, 0)
                     context.clearRect(0, 0, canvas.width, canvas.height)
 
-                    await page.render({
+                    renderTask = page.render({
                         canvas,
                         canvasContext: context,
                         viewport,
                         transform: ratio === 1 ? undefined : [ratio, 0, 0, ratio, 0, 0],
-                    }).promise
+                    })
+                    await renderTask.promise
 
                     if (!isCancelled) {
-                        setPageSize({width: baseViewport.width, height: baseViewport.height})
+                        nextPageSize = {width: baseViewport.width, height: baseViewport.height}
+                        setPageSize(nextPageSize)
                     }
                 } else if (activeFileType === 'epub' && epubDoc) {
                     const chapterIndex = clamp(pageNumber, 1, epubDoc.numPages)
@@ -404,13 +441,13 @@ function Page() {
                             zoom
                         )
                         if (!isCancelled) {
+                            nextPageSize = size
                             setPageSize(size)
                         }
                     }
                 } else if (activeFileType === 'image' && imageDoc) {
                     const baseWidth = imageDoc.naturalWidth || 800
                     const baseHeight = imageDoc.naturalHeight || 600
-                    const ratio = window.devicePixelRatio || 1
 
                     const viewportWidth = baseWidth * zoom
                     const viewportHeight = baseHeight * zoom
@@ -425,11 +462,32 @@ function Page() {
                     context.drawImage(imageDoc, 0, 0, baseWidth, baseHeight)
 
                     if (!isCancelled) {
-                        setPageSize({width: baseWidth, height: baseHeight})
+                        nextPageSize = {width: baseWidth, height: baseHeight}
+                        setPageSize(nextPageSize)
                     }
                 }
-            } catch (renderError) {
-                if (!isCancelled) {
+
+                if (!isCancelled && nextPageSize && canvas.width > 0 && canvas.height > 0) {
+                    const offscreen = document.createElement('canvas')
+                    offscreen.width = canvas.width
+                    offscreen.height = canvas.height
+                    const offscreenCtx = offscreen.getContext('2d')
+                    if (offscreenCtx) {
+                        offscreenCtx.drawImage(canvas, 0, 0)
+                        if (renderedPagesCacheRef.current.size >= 15) {
+                            const oldestKey = renderedPagesCacheRef.current.keys().next().value
+                            if (oldestKey !== undefined) {
+                                renderedPagesCacheRef.current.delete(oldestKey)
+                            }
+                        }
+                        renderedPagesCacheRef.current.set(cacheKey, {
+                            canvas: offscreen,
+                            pageSize: nextPageSize,
+                        })
+                    }
+                }
+            } catch (renderError: any) {
+                if (!isCancelled && renderError?.name !== 'RenderingCancelledException') {
                     setError(renderError instanceof Error ? renderError.message : 'Could not render page.')
                 }
             } finally {
@@ -443,6 +501,9 @@ function Page() {
 
         return () => {
             isCancelled = true
+            if (renderTask?.cancel) {
+                renderTask.cancel()
+            }
         }
     }, [activeFileType, epubDoc, imageDoc, pageNumber, pdf, zoom])
 
